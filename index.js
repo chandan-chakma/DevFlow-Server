@@ -2,6 +2,12 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 const { connectToMongoDB } = require('./config/db.js');
+const { initializeModels } = require('./models');
+const { initializeControllers } = require('./controllers');
+
+// Routes
+const projectRoutes = require('./routes/projectRoute');
+
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -14,7 +20,15 @@ async function startServer() {
     try {
         // connect database 
         const { collection } = await (connectToMongoDB());
-        console.log("connected to the mongodb")
+        // console.log("connected to the mongodb")
+        // Initialize models
+        const models = initializeModels(collection);
+
+        // Initialize controllers
+        const controllers = initializeControllers(models, collection);
+
+        // Register routes
+        projectRoutes(app, controllers);
 
         app.get('/', (req, res) => {
             res.send('hello word')
