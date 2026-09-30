@@ -3,7 +3,7 @@ class ProjectController {
         this.Project = models.Project;
         this.collection = collection;
     }
-
+        // Post Projects 
     async postProject(req, res) {
         try {
             const projectData = req.body;
@@ -12,6 +12,18 @@ class ProjectController {
         }
         catch (error) {
             res.status(500).send({messgae:'Error creating project'})
+        }
+    }
+
+    // Get ALL Project 
+    async getAllProjects(req, res) {
+        try {
+            const result = await this.Project.findAllProjects();
+            res.send(result)
+            
+        }
+        catch (error) {
+            res.status(500).send({ messgae: 'Error getting project' })
         }
     }
 }
