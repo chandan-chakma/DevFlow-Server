@@ -1,3 +1,5 @@
+const { ObjectId } = require("mongodb");
+
 class ProjectModel {
     constructor(collection) {
         this.collection=collection
@@ -13,6 +15,13 @@ class ProjectModel {
     async findAllProjects() {
         const cursor = this.collection.find()
         return await cursor.toArray();
+    }
+    
+    // Delete Project 
+    async delete(id) {
+        const query = { _id: new ObjectId(id) };
+        const result = await this.collection.deleteOne(query);
+        return result;
     }
 
     

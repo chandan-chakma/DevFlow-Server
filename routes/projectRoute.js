@@ -10,5 +10,10 @@ function projectRoutes(app, controllers) {
     app.get('/projects', (req, res)=>{
         ProjectController.getAllProjects(req,res)
     })
+
+    // project delete route 
+    app.delete('/projects/:id', (req, res) => {
+        ProjectController.deleteProject(req,res)
+    })
 }
 module.exports =projectRoutes

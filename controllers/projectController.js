@@ -26,5 +26,17 @@ class ProjectController {
             res.status(500).send({ messgae: 'Error getting project' })
         }
     }
+
+    // Delete Project 
+    async deleteProject(req, res) {
+        try {
+            const id = req.params.id;
+            const result = await this.Project.delete(id);
+            res.send(result);
+        }
+        catch(error) {
+            res.status(500).send({messge:'error deleting projcect'})
+        }
+    }
 }
 module.exports = ProjectController;
