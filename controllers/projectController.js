@@ -18,7 +18,12 @@ class ProjectController {
     // Get ALL Project 
     async getAllProjects(req, res) {
         try {
-            const result = await this.Project.findAllProjects();
+            const searchText = req.query.searchText;
+            const status = req.query.status; 
+            const sorting = req.query.sort;
+
+
+            const result = await this.Project.findAllProjects(searchText,status,sorting);
             res.send(result)
             
         }

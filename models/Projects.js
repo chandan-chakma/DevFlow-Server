@@ -12,8 +12,36 @@ class ProjectModel {
     }; 
 
     // Get All Project 
-    async findAllProjects() {
-        const cursor = this.collection.find()
+    async findAllProjects(searchText = null,status=null,sort={createdAt:-1}) {
+        const query = {};
+        if (searchText) {
+            query.name = {
+                $regex: searchText,
+                $options:'i'
+            }
+        }
+        if (status) {
+            query.status = status;
+        }
+        let sortOption = {};
+        if (sort === 'latest') {
+            sortOption = { createdAt: -1 };
+        }
+
+        if (sort === 'oldest') {
+            sortOption = { createdAt: 1 };
+        }
+
+        if (sort === 'name-asc') {
+            sortOption = { name: 1 };
+        }
+
+        if (sort === 'name-desc') {
+            sortOption = { name: -1 };
+        }
+
+
+        const cursor = this.collection.find(query).sort(sortOption)
         return await cursor.toArray();
     }
     
