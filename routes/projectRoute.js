@@ -10,6 +10,11 @@ function projectRoutes(app, controllers) {
     app.get('/projects', (req, res)=>{
         ProjectController.getAllProjects(req,res)
     })
+    // get signle project route 
+    app.get('/projects/:id', (req, res) => {
+        ProjectController.getProjectById(req,res)
+        
+    }) 
 
     // project delete route 
     app.delete('/projects/:id', (req, res) => {

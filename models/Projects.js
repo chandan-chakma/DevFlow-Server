@@ -39,12 +39,42 @@ class ProjectModel {
         if (sort === 'name-desc') {
             sortOption = { name: -1 };
         }
+        const pipeline = [
+            {
+                $group: {
+                    _id: '$status',
+                    count: { $sum: 1 }
+                }
+            },
+            {
+                $project: {
+                    _id: 0,
+                    status: '$_id',
+                    count: 1
+                }
+            }
+        ];
 
 
-        const cursor = this.collection.find(query).sort(sortOption)
-        return await cursor.toArray();
+        const projects =await this.collection.find(query).sort(sortOption).toArray();
+        const statusCounts = await this.collection.aggregate(pipeline).toArray()
+        const total = await this.collection.countDocuments();
+        return {
+            projects,
+            total,
+            statusCounts
+            
+        }
+    }
+
+    // find single project 
+    async findById(id) {
+        const query = { _id: new ObjectId(id) };
+        return await this.collection.findOne(query);
     }
     
+
+
     // Delete Project 
     async delete(id) {
         const query = { _id: new ObjectId(id) };

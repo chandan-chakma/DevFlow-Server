@@ -32,6 +32,18 @@ class ProjectController {
         }
     }
 
+    // Get single project by id 
+    async getProjectById(req, res) {
+        try {
+            const id = req.params.id;
+            const project = await this.Project.findById(id);
+            res.send(project)
+        }
+        catch (error) {
+            res.status(500).send({message:'Error getting Project'})
+        }
+    }
+
     // Delete Project 
     async deleteProject(req, res) {
         try {
