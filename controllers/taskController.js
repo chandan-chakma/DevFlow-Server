@@ -3,7 +3,7 @@ class TaskController{
         this.Task = models.Task;
         this.collection=collection
     }
-
+    // post or create Task 
     async postTask(req, res) {
         try {
             const id = req.params.id;
@@ -16,6 +16,32 @@ class TaskController{
         catch (error) {
             console.log(error)
             res.status(500).send({message:'Error creating Task'})
+        }
+    }
+
+    // get task data 
+    async getAllTasks(req, res) {
+        try {
+            const result = await this.Task.findAllTasks()
+            res.send(result);
+        }
+        catch (error) {
+            res.status(500).send({
+                message: 'Error getting tasks'
+            });
+        }
+    
+    }
+    
+    // delete task data 
+    async deleteTask(req, res) {
+        try {
+            const id = req.params.id;
+            const result = await this.Task.Delete(id);
+            res.send(result);
+        }
+        catch (error) {
+            res.status(500).send({messgae:'Error Deleting the Task'})
         }
     }
 }
