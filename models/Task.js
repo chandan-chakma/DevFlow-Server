@@ -15,7 +15,7 @@ class TaskModel{
     }
 
     // get task data 
-    async findAllTasks(searchText = null) {
+    async findAllTasks(searchText = null, status = null, priority =null,sort='latest') {
         const query={}
         if (searchText) {
             query.title = {
@@ -23,10 +23,31 @@ class TaskModel{
                 $options:'i'
             }
         }
+        if (status) {
+            query.status = status;
+        }
+        let sortOption = {};
+        if (sort === 'latest') {
+            sortOption = { createdAt: -1 };
+        }
+        if (sort === 'oldest') {
+            sortOption = { createdAt: 1 };
+        }
+
+        if (sort === 'due-asc') {
+            sortOption = { dueDate: 1 };
+        }
+
+        if (priority) {
+            query.priority = priority;
+        }
         const pipeline = [
             {
                 $match: query
-        },
+            },
+            {
+                $sort: sortOption
+            },
         
             {
                 $lookup: {

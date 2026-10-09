@@ -7,7 +7,7 @@ class TaskController{
     async postTask(req, res) {
         try {
             const id = req.params.id;
-            console.log('Project ID:', req.params.id);
+            // console.log('Project ID:', req.params.id);
             const taskData = req.body;
             taskData.projectId = id;
             const result = await this.Task.createTask(taskData);
@@ -23,7 +23,10 @@ class TaskController{
     async getAllTasks(req, res) {
         try {
             const searchText = req.query.searchText;
-            const result = await this.Task.findAllTasks(searchText)
+            const status = req.query.status;
+            const priority = req.query.priority;
+            const sort = req.query.sort;
+            const result = await this.Task.findAllTasks(searchText, status, priority);
             res.send(result);
         }
         catch (error) {
