@@ -20,10 +20,14 @@ class TaskModel{
         if (searchText) {
             query.title = {
                 $regex: searchText,
-                Option:'i'
+                $options:'i'
             }
         }
         const pipeline = [
+            {
+                $match: query
+        },
+        
             {
                 $lookup: {
                     from: "projects",

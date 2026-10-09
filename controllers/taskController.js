@@ -22,7 +22,8 @@ class TaskController{
     // get task data 
     async getAllTasks(req, res) {
         try {
-            const result = await this.Task.findAllTasks()
+            const searchText = req.query.searchText;
+            const result = await this.Task.findAllTasks(searchText)
             res.send(result);
         }
         catch (error) {
