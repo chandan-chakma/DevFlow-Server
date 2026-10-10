@@ -13,6 +13,13 @@ class TaskModel{
         const result = await this.collection.insertOne(taskData);
         return result;
     }
+    // get specifc project task 
+    async findTaskByProject(projectId) {
+        const query = { projectId: new ObjectId(projectId) }
+        const result = await this.collection.find(query).toArray();
+        return result;
+        
+    }
 
     // get task data 
     async findAllTasks(searchText = null, status = null, priority =null,sort='latest') {
@@ -78,6 +85,14 @@ class TaskModel{
         const cursor = this.collection.aggregate(pipeline)
         const result = await cursor.toArray();
         return result;
+    }
+
+    async updateTask(id, updateData) {
+        const query = { _id: new ObjectId(id) };
+        const updateDoc = {
+            $set: updateData
+        };
+        return await this.collection.updateOne(query, updateDoc);
     }
 
     async Delete(id) {

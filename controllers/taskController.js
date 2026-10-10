@@ -19,6 +19,18 @@ class TaskController{
         }
     }
 
+    // get project spcific task 
+    async getTaskByProject(req, res) {
+        try {
+            const projectId = req.params.id;
+            const result = await this.Task.findTaskByProject(projectId);
+            res.send(result);
+        }
+        catch (error) {
+            res.status(500).send({message:'Error getting project tasks'})
+        }
+    }
+
     // get task data 
     async getAllTasks(req, res) {
         try {
@@ -26,7 +38,7 @@ class TaskController{
             const status = req.query.status;
             const priority = req.query.priority;
             const sort = req.query.sort;
-            const result = await this.Task.findAllTasks(searchText, status, priority);
+            const result = await this.Task.findAllTasks(searchText, status, priority,sort);
             res.send(result);
         }
         catch (error) {
@@ -35,6 +47,19 @@ class TaskController{
             });
         }
     
+    }
+
+    // update task data 
+    async updatedTask(req, res) {
+        try {
+            const id = req.params.id;
+            const taskData = req.body;
+            const result = await this.Task.updateTask(id, taskData);
+            res.send(result);
+        }
+        catch (error) {
+            res.status(500).send({ message: 'Error updating task' })
+        }
     }
     
     // delete task data 

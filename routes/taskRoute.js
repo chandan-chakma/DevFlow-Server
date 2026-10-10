@@ -6,9 +6,19 @@ function TaskRoute(app, controllers) {
         TaskController.postTask(req,res)
     })
 
+    // get task for specific project 
+    app.get('/projects/:id/tasks', (req, res) => {
+        TaskController.getTaskByProject(req,res)
+    })
+
     // get all task 
     app.get('/tasks', (req, res) => {
         TaskController.getAllTasks(req, res);
+    })
+
+    // Update task 
+    app.patch('/tasks/:id', (req, res) => {
+        TaskController.updatedTask(req,res)
     })
 
     // delete task data 
