@@ -14,9 +14,28 @@ class TaskModel{
         return result;
     }
     // get specifc project task 
-    async findTaskByProject(projectId) {
+    async findTaskByProject(projectId, searchText = null, priority = null, sort ='due-latest') {
         const query = { projectId: new ObjectId(projectId) }
-        const result = await this.collection.find(query).toArray();
+        if (searchText) {
+            query.title = {
+                $regex: searchText,
+                $options:'i'
+            }
+        }
+        if (priority) {
+            query.priority=priority
+        }
+        let sortOption = {};
+
+        if (sort === 'due-latest') {
+            sortOption = { dueDate: -1 };
+        }
+
+        if (sort === 'due-earliest') {
+            sortOption = { dueDate: 1 };
+        }
+
+        const result = await this.collection.find(query).sort(sortOption).toArray();
         return result;
         
     }

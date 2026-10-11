@@ -23,7 +23,10 @@ class TaskController{
     async getTaskByProject(req, res) {
         try {
             const projectId = req.params.id;
-            const result = await this.Task.findTaskByProject(projectId);
+            const searchText = req.query.searchText;
+            const priority = req.query.priority;
+            const sort = req.query.sort;
+            const result = await this.Task.findTaskByProject(projectId,searchText,priority,sort);
             res.send(result);
         }
         catch (error) {
