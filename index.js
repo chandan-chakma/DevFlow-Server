@@ -8,6 +8,7 @@ const { initializeControllers } = require('./controllers');
 // Routes
 const projectRoutes = require('./routes/projectRoute');
 const TaskRoute = require('./routes/taskRoute.js');
+const commentRoute = require('./routes/commentRoute.js');
 
 
 const app = express();
@@ -30,7 +31,8 @@ async function startServer() {
 
         // Register routes
         projectRoutes(app, controllers);
-        TaskRoute(app,controllers)
+        TaskRoute(app, controllers);
+        commentRoute(app, controllers);
 
         app.get('/', (req, res) => {
             res.send('hello word')
