@@ -1,6 +1,7 @@
 class TaskController{
     constructor(models, collection) {
         this.Task = models.Task;
+        this.Activity = models.Activity;
         this.collection=collection
     }
     // post or create Task 
@@ -11,6 +12,20 @@ class TaskController{
             const taskData = req.body;
             taskData.projectId = id;
             const result = await this.Task.createTask(taskData);
+            // 2. Record the activity
+            await this.Activity.createActivity({
+                projectId: id,
+                taskId: result.insertedId,
+                action: "created",
+                entityType: "task",
+                description: `Created a new task: ${taskData.title}`,
+                taskTitle: taskData.title,
+                performedBy: {
+                    userId: req.user?.uid || "unknown",
+                    name: req.user?.name || "A team member"
+                }
+            });
+
             res.send(result)
         }
         catch (error) {

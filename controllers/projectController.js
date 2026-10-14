@@ -1,13 +1,30 @@
 class ProjectController {
     constructor(models, collection) {
         this.Project = models.Project;
+        this.Activity = models.Activity;
         this.collection = collection;
     }
         // Post Projects 
     async postProject(req, res) {
         try {
             const projectData = req.body;
+            // save project post 
             const result = await this.Project.createProject(projectData);
+            // get newly project id 
+            const projectId = result.insertedId;
+            // 3. Save an activity record
+            await this.Activity.createActivity({
+                projectId: projectId,
+                taskId: null,
+                action: "created",
+                entityType: "project",
+                description: `Created a new project: ${projectData.name}`,
+                performedBy: {
+                    userId: req.user?.uid || "unknown",
+                    name: req.user?.name || "A team member"
+                }
+            });
+            
             res.send(result);
         }
         catch (error) {
