@@ -10,6 +10,7 @@ const projectRoutes = require('./routes/projectRoute');
 const TaskRoute = require('./routes/taskRoute.js');
 const commentRoute = require('./routes/commentRoute.js');
 const activityRoute = require('./routes/activityRoute.js');
+const UserRoute = require('./routes/userRoute.js');
 
 
 const app = express();
@@ -34,7 +35,8 @@ async function startServer() {
         projectRoutes(app, controllers);
         TaskRoute(app, controllers);
         commentRoute(app, controllers);
-        activityRoute(app,controllers)
+        activityRoute(app, controllers);
+        UserRoute(app, controllers);
 
         app.get('/', (req, res) => {
             res.send('hello word')
