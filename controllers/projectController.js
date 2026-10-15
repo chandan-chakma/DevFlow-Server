@@ -65,7 +65,29 @@ class ProjectController {
     async deleteProject(req, res) {
         try {
             const id = req.params.id;
+            // 1. Get project details before deletion
+            const project = await this.Project.findById(id);
+            if (!project) {
+                return res.status(404).send({
+                    message: "Project not found"
+                });
+            }
             const result = await this.Project.delete(id);
+            // 3. Record deletion activity
+            if (result.deletedCount === 1) {
+                await this.Activity.createActivity({
+                    projectId: project._id,
+                    taskId: null,
+                    action: "deleted",
+                    entityType: "project",
+                    description: `Deleted project: ${project.name}`,
+                    performedBy: {
+                        userId: req.user?.uid || "unknown",
+                        name: req.user?.name || "A team member"
+                    }
+                });
+            }
+
             res.send(result);
         }
         catch(error) {

@@ -1,6 +1,7 @@
 class CommentController{
     constructor(models, collection) {
         this.Comment = models.Comment;
+        this.Activity = models.Activity;
         this.collection = collection;
     }
 
@@ -15,7 +16,29 @@ class CommentController{
                     message: "Comment content is required"
                 });
             }
+
             const result = await this.Comment.createComment(commentData);
+
+            // 2. Find the task to get its project ID and title
+            const task = await this.collection.tasks.findOne({
+                _id: new (require("mongodb").ObjectId)(id)
+            });
+
+            if (task) {
+                // 3. Record the activity
+                await this.Activity.createActivity({
+                    projectId: task.projectId,
+                    taskId: task._id,
+                    action: "comment",
+                    entityType: "task",
+                    description: "Added a comment to a task",
+                    taskTitle: task.title,
+                    performedBy: {
+                        userId: req.user?.uid || "unknown",
+                        name: req.user?.name || "A team member"
+                    }
+                });
+            }
             res.send(result)
         }
         catch (error) {

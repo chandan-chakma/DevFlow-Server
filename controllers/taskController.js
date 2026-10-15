@@ -72,7 +72,33 @@ class TaskController{
         try {
             const id = req.params.id;
             const taskData = req.body;
+            // get thet task before updateing 
+            const existingTask = await this.Task.findTaskById(id);
+            if (!existingTask) {
+                return res.status(404).send({message:'task not found'})
+            }
+            
+            // updata task
             const result = await this.Task.updateTask(id, taskData);
+
+            if (
+                taskData.status &&
+                taskData.status !== existingTask.status
+            ) {
+                await this.Activity.createActivity({
+                    projectId: existingTask.projectId,
+                    taskId: existingTask._id,
+                    action: "status",
+                    entityType: "task",
+                    description: `Changed task status from ${existingTask.status} to ${taskData.status}`,
+                    taskTitle: existingTask.title,
+                    status: taskData.status,
+                    performedBy: {
+                        userId: req.user?.uid || "unknown",
+                        name: req.user?.name || "A team member"
+                    }
+                });
+            }
             res.send(result);
         }
         catch (error) {
@@ -84,7 +110,30 @@ class TaskController{
     async deleteTask(req, res) {
         try {
             const id = req.params.id;
+            // 1. Get task details before deletion
+            const task = await this.Task.findTaskById(id);
+
+            if (!task) {
+                return res.status(404).send({
+                    message: "Task not found"
+                });
+            }
             const result = await this.Task.Delete(id);
+            // 3. Record deletion activity
+            if (result.deletedCount === 1) {
+                await this.Activity.createActivity({
+                    projectId: task.projectId,
+                    taskId: task._id,
+                    action: "deleted",
+                    entityType: "task",
+                    description: `Deleted task: ${task.title}`,
+                    taskTitle: task.title,
+                    performedBy: {
+                        userId: req.user?.uid || "unknown",
+                        name: req.user?.name || "A team member"
+                    }
+                });
+            }
             res.send(result);
         }
         catch (error) {

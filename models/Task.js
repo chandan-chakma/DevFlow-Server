@@ -106,6 +106,13 @@ class TaskModel{
         return result;
     }
 
+    // get task by id 
+    async findTaskById(id) {
+        return await this.collection.findOne({
+            _id: new ObjectId(id)
+        });
+    }
+
     async updateTask(id, updateData) {
         const query = { _id: new ObjectId(id) };
         const updateDoc = {
