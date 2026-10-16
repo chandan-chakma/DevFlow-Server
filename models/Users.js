@@ -8,5 +8,10 @@ class UserModel{
         const result = await this.collection.insertOne(userData);
         return result;
     }
+
+    async existUser(email) {
+        const user = await this.collection.findOne({ email });
+        return !!user;
+    }
 }
 module.exports = UserModel;
