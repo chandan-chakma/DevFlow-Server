@@ -8,6 +8,9 @@ class TaskModel{
     // Create Task post 
     async createTask(taskData) {
         taskData.projectId = new ObjectId(taskData.projectId);
+        if (taskData.assignedTo) {
+            taskData.assignedTo = new ObjectId(taskData.assignedTo);
+        }
         taskData.createdAt = new Date();
         taskData.updatedAt = new Date()
         const result = await this.collection.insertOne(taskData);
@@ -34,8 +37,50 @@ class TaskModel{
         if (sort === 'due-earliest') {
             sortOption = { dueDate: 1 };
         }
+        const pipeline = [
+            {
+                $match: query
+            },
+            {
+                $sort: sortOption
+            },
+            {
+                $lookup: {
+                    from: "users",
+                    localField: "assignedTo",
+                    foreignField: "_id",
+                    as: "assignee"
+                }
+            },
+            {
+                $unwind: {
+                    path: "$assignee",
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+            {
+                $project: {
+                    title: 1,
+                    description: 1,
+                    status: 1,
+                    priority: 1,
+                    dueDate: 1,
+                    projectId: 1,
+                    assignedTo: 1,
+                    createdAt: 1,
+                    updatedAt: 1,
+                    assignee: {
+                        _id: "$assignee._id",
+                        name: "$assignee.name",
+                        email: "$assignee.email",
+                        photoURL: "$assignee.photoURL",
+                        role: "$assignee.role"
+                    }
+                }
+            }
+        ];
 
-        const result = await this.collection.find(query).sort(sortOption).toArray();
+        const result = await this.collection.aggregate(pipeline).toArray();
         return result;
         
     }
@@ -115,6 +160,9 @@ class TaskModel{
 
     async updateTask(id, updateData) {
         const query = { _id: new ObjectId(id) };
+        if (updateData.assignedTo) {
+            updateData.assignedTo = new ObjectId(updateData.assignedTo);
+        }
         const updateDoc = {
             $set: updateData
         };
