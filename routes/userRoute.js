@@ -5,5 +5,10 @@ function UserRoute(app, controllers) {
     app.post('/users', (req, res) =>{ 
         UserController.postUser(req,res)
     })
+
+    // get all user 
+    app.get('/users', (req, res) => {
+        UserController.getAllUser(req, res);
+    })
 }
 module.exports = UserRoute;

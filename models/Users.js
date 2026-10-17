@@ -9,9 +9,18 @@ class UserModel{
         return result;
     }
 
+    // check existing user 
     async existUser(email) {
         const user = await this.collection.findOne({ email });
         return !!user;
     }
+
+    // find all user or get user 
+    async findAllUser() {
+        const cursor = await this.collection.find().toArray();
+        return cursor;
+    }
+
+
 }
 module.exports = UserModel;

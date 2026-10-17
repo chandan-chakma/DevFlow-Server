@@ -23,7 +23,8 @@ async function connectToMongoDB() {
                 projects: db.collection('projects'),
                 tasks: db.collection('tasks'),
                 comments: db.collection('comments'),
-                activities: db.collection('activities')
+                activities: db.collection('activities'),
+                projectMembers:db.collection('projectMembers')
 
             }
             

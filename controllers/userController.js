@@ -20,8 +20,18 @@ class UserController{
             // console.log(error)
             res.status(500).send({message:'Error creating user'})
         }
-        
+    
+    }
 
+    // get all user 
+    async getAllUser(req, res) {
+        try {
+            const users = await this.User.findAllUser();
+            res.send(users);
+        }
+        catch (error) {
+            return res.status(500).send({message:'Faild to get User'})
+        }
     }
 }
 module.exports = UserController;
