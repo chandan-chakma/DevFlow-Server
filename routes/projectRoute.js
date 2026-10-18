@@ -1,23 +1,25 @@
+const { verfyToken } = require("../middleware/auth.js");
+
 function projectRoutes(app, controllers) {
     const ProjectController = controllers.project;
 
     // Post Project Route 
-    app.post('/projects', (req, res) => {
+    app.post('/projects',verfyToken, (req, res) => {
         ProjectController.postProject(req,res)
     })
 
     // Get project Route 
-    app.get('/projects', (req, res)=>{
+    app.get('/projects',verfyToken, (req, res)=>{
         ProjectController.getAllProjects(req,res)
     })
     // get signle project route 
-    app.get('/projects/:id', (req, res) => {
+    app.get('/projects/:id', verfyToken, (req, res) => {
         ProjectController.getProjectById(req,res)
         
     }) 
 
     // project delete route 
-    app.delete('/projects/:id', (req, res) => {
+    app.delete('/projects/:id', verfyToken, (req, res) => {
         ProjectController.deleteProject(req,res)
     })
 }

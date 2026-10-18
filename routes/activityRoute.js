@@ -1,3 +1,5 @@
+const { verfyToken } = require("../middleware/auth.js");
+
 function activityRoute(app, controllers) {
     const ActivityController = controllers.activity;
 
@@ -7,7 +9,7 @@ function activityRoute(app, controllers) {
     })
 
     // get the activity route 
-    app.get('/projects/:projectId/activities', (req, res) => {
+    app.get('/projects/:projectId/activities', verfyToken, (req, res) => {
         ActivityController.getActivtiy(req, res);
     })
 }
