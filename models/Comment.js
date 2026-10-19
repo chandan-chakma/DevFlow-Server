@@ -43,7 +43,7 @@ class CommentModel{
                     createdAt: 1,
                     updatedAt: 1,
                     "user._id": 1,
-                    "user.name": 1,
+                    "user.displayName": 1,
                     "user.photoURL": 1,
                     "user.email": 1
                 }
@@ -54,7 +54,7 @@ class CommentModel{
                 }
             }
         ]
-        const result = await this.collection.agrregate(pipline).toArray();
+        const result = await this.collection.aggregate(pipline).toArray();
         return result;
     }
 }

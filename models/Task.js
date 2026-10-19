@@ -8,8 +8,10 @@ class TaskModel{
     // Create Task post 
     async createTask(taskData) {
         taskData.projectId = new ObjectId(taskData.projectId);
-        if (taskData.assignedTo) {
+        if (taskData.assignedTo && taskData.assignedTo !== "Unassigned") {
             taskData.assignedTo = new ObjectId(taskData.assignedTo);
+        } else {
+            delete taskData.assignedTo;
         }
         taskData.createdAt = new Date();
         taskData.updatedAt = new Date()

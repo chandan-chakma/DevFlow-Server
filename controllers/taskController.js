@@ -2,6 +2,7 @@ class TaskController{
     constructor(models, collection) {
         this.Task = models.Task;
         this.Activity = models.Activity;
+        this.Notification = models.Notification;
         this.collection=collection
     }
     // post or create Task 
@@ -11,7 +12,27 @@ class TaskController{
             // console.log('Project ID:', req.params.id);
             const taskData = req.body;
             taskData.projectId = id;
+            const actor = await this.collection.users.findOne({
+                email: req.token_email
+            });
+
+            if (!actor) {
+                return res.status(404).send({
+                    message: "Authenticated user not found"
+                });
+            }
             const result = await this.Task.createTask(taskData);
+            // Create notification only when a task is assigned
+            if (taskData.assignedTo && taskData.assignedTo !== "Unassigned") {
+                await this.Notification.createNotification({
+                    recipientId: taskData.assignedTo,
+                    actorId: actor._id,
+                    projectId: id,
+                    taskId: result.insertedId,
+                    type: "task_assigned",
+                    message: `You have been assigned a task: ${taskData.title}`
+                });
+            }
             // 2. Record the activity
             await this.Activity.createActivity({
                 projectId: id,
@@ -21,8 +42,8 @@ class TaskController{
                 description: `Created a new task: ${taskData.title}`,
                 taskTitle: taskData.title,
                 performedBy: {
-                    userId: req.user?.uid || "unknown",
-                    name: req.user?.name || "A team member"
+                    userId: actor._id || "unknown",
+                    name: actor.displaName || "A team member"
                 }
             });
 

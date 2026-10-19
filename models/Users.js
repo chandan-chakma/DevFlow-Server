@@ -21,6 +21,11 @@ class UserModel{
         return cursor;
     }
 
+    // find signle user by email 
+    async findUserByEmail(email) {
+        return await this.collection.findOne({ email });
+    }
+
 
 }
 module.exports = UserModel;

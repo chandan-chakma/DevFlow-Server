@@ -16,6 +16,19 @@ class CommentController{
                     message: "Comment content is required"
                 });
             }
+            // Get the email from the verified JWT
+            const email = req.token_email;
+            // console.log(email)
+            // Find the user in MongoDB
+            const user = await this.collection.users.findOne({ email });
+
+            if (!user) {
+                return res.status(404).send({
+                    message: "User not found"
+                });
+            }
+
+            commentData.userId = user._id;
 
             const result = await this.Comment.createComment(commentData);
 
@@ -34,8 +47,8 @@ class CommentController{
                     description: "Added a comment to a task",
                     taskTitle: task.title,
                     performedBy: {
-                        userId: req.user?.uid || "unknown",
-                        name: req.user?.name || "A team member"
+                        userId: user._id || "unknown",
+                        name: user?.displayName || "A team member"
                     }
                 });
             }

@@ -14,6 +14,7 @@ const UserRoute = require('./routes/userRoute.js');
 const ProjectMemberRoute = require('./routes/projectMemberRoute.js');
 var jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
+const notificationRoute = require('./routes/notificationRoute.js');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -63,7 +64,8 @@ async function startServer() {
         commentRoute(app, controllers);
         activityRoute(app, controllers);
         UserRoute(app, controllers);
-        ProjectMemberRoute(app,controllers)
+        ProjectMemberRoute(app, controllers);
+        notificationRoute(app,controllers)
 
         app.get('/', (req, res) => {
             res.send('hello word')

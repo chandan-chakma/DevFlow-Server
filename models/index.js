@@ -1,6 +1,7 @@
 
 const ActivityModel = require("./Activity.js");
 const CommentModel = require("./Comment.js");
+const NotificationModel = require("./notification.js");
 const ProjectMembersModal = require("./ProjectMembers.js");
 const ProjectModel = require("./Projects.js");
 const TaskModel = require("./Task.js");
@@ -13,7 +14,8 @@ function initializeModels(collection) {
         Comment: new CommentModel(collection.comments),
         Activity: new ActivityModel(collection.activities),
         User: new UserModel(collection.users),
-        ProjectMembers: new ProjectMembersModal(collection.projectMembers)
+        ProjectMembers: new ProjectMembersModal(collection.projectMembers),
+        Notification:new NotificationModel(collection.notifications)
     }
 }
 module.exports={initializeModels}

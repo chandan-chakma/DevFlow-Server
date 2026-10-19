@@ -44,7 +44,7 @@ class ProjectMembersModal{
             {
                 $project: {
                     _id: '$user._id',
-                    name: '$user.name',
+                    name: '$user.displayName',
                     email: '$user.email',
                     photoURL: '$user.photoURL',
                     role: 1,

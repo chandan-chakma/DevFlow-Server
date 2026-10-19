@@ -1,0 +1,37 @@
+const { ObjectId } = require("mongodb")
+
+class NotificationModel{
+    constructor(collection) {
+        this.collection=collection
+    }
+
+    // now cerate notification 
+    async createNotification(notificationData) {
+        notificationData.recipientId = new ObjectId(notificationData.recipientId);
+        notificationData.actorId = new ObjectId(notificationData.actorId);
+
+        notificationData.projectId = notificationData.projectId
+            ? new ObjectId(notificationData.projectId)
+            : null;
+
+        notificationData.taskId = notificationData.taskId
+            ? new ObjectId(notificationData.taskId)
+            : null;
+
+        notificationData.isRead = false;
+        notificationData.createdAt = new Date();
+
+        const result = await this.collection.insertOne(notificationData);
+
+        return result;
+    }
+
+    // now we will get or notify only user who geto to not to notify recipientId
+    async findNotificationByUser(recipientId) {
+        const query = { recipientId: new ObjectId(recipientId) };
+        const result = await this.collection.find(query).sort({ createdAt: -1 }).toArray();
+        return result;
+    }
+    
+}
+module.exports = NotificationModel;
