@@ -21,9 +21,11 @@ class TaskController{
                     message: "Authenticated user not found"
                 });
             }
+            // for notificaton add who create task 
+            taskData.createdBy = actor._id;
             const result = await this.Task.createTask(taskData);
             // Create notification only when a task is assigned
-            if (taskData.assignedTo && taskData.assignedTo !== "Unassigned") {
+            if (taskData.assignedTo && taskData.assignedTo !== "Unassigned" && taskData.assignedTo.toString() !== actor._id.toString()) {
                 await this.Notification.createNotification({
                     recipientId: taskData.assignedTo,
                     actorId: actor._id,
@@ -106,6 +108,14 @@ class TaskController{
                 taskData.status &&
                 taskData.status !== existingTask.status
             ) {
+                await this.Notification.createNotification({
+                    recipientId: existingTask.createdBy,
+                    actorId: existingTask.createdBy,
+                    projectId: existingTask.projectId,
+                    taskId: existingTask._id,
+                    type: "task_status_changed",
+                    message: `The status of your task "${existingTask.title}" changed to ${taskData.status}`
+                });
                 await this.Activity.createActivity({
                     projectId: existingTask.projectId,
                     taskId: existingTask._id,

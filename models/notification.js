@@ -29,7 +29,21 @@ class NotificationModel{
     // now we will get or notify only user who geto to not to notify recipientId
     async findNotificationByUser(recipientId) {
         const query = { recipientId: new ObjectId(recipientId) };
-        const result = await this.collection.find(query).sort({ createdAt: -1 }).toArray();
+        const result = await this.collection.find(query).sort({ createdAt: -1 }).limit(5).toArray();
+        return result;
+    }
+
+
+    // mark read notification 
+    async markAsRead(notificationId, recipientId) {
+        const query = {
+            _id: new ObjectId(notificationId),
+            recipientId: new ObjectId(recipientId)
+        }
+        const updateDoc = {
+            $set:{isRead:true}
+        }
+        const result = await this.collection.updateOne(query, updateDoc);
         return result;
     }
     

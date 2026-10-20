@@ -45,5 +45,26 @@ class NotificatonController{
             });
         }
     }
+
+    // mark as read the notification 
+    async markNotificationAsRead(req, res) {
+        try {
+            const notificationId = req.params.id;
+            // Identify the logged-in user
+            const user = await this.User.findUserByEmail(req.token_email);
+            // console.log(req.token_email)
+
+            if (!user) {
+                return res.status(404).send({
+                    message: "User not found"
+                });
+            }
+            const result = await this.Notification.markAsRead(notificationId, user._id);
+            return res.send(result)
+        }
+        catch (error) {
+            res.status(500).send({message: 'Failed to mark notification as Read'})
+        }
+    }
 }
 module.exports = NotificatonController;

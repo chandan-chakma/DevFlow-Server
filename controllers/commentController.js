@@ -2,6 +2,7 @@ class CommentController{
     constructor(models, collection) {
         this.Comment = models.Comment;
         this.Activity = models.Activity;
+        this.Notification = models.Notification;
         this.collection = collection;
     }
 
@@ -36,6 +37,35 @@ class CommentController{
             const task = await this.collection.tasks.findOne({
                 _id: new (require("mongodb").ObjectId)(id)
             });
+            // creatae notification 
+            if (task) {
+                // Collect the task creator and assigned member
+                const recipients = [
+                    task.createdBy,
+                    task.assignedTo
+                ].filter(Boolean);
+
+                // Remove duplicate IDs and exclude the person who commented
+                const recipientIds = [
+                    ...new Set(
+                        recipients
+                            .map(id => id.toString())
+                            .filter(id => id !== user._id.toString())
+                    )
+                ];
+
+                // Create a notification for each recipient
+                for (const recipientId of recipientIds) {
+                    await this.Notification.createNotification({
+                        recipientId,
+                        actorId: user._id,
+                        projectId: task.projectId,
+                        taskId: task._id,
+                        type: "task_commented",
+                        message: `${user.displayName || "A team member"} commented on your task: ${task.title}`
+                    });
+                }
+            }
 
             if (task) {
                 // 3. Record the activity
