@@ -15,10 +15,59 @@ const ProjectMemberRoute = require('./routes/projectMemberRoute.js');
 var jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
 const notificationRoute = require('./routes/notificationRoute.js');
+const startTaskReminderJob = require('./jobs/taskReminder.js');
+// socket io import 
+const http = require('http');
+const { Server } = require('socket.io');
+const { setIo } = require('./config/socket.js');
+const { ObjectId } = require('mongodb');
 
 const app = express();
+const server = http.createServer(app)
 const port = process.env.PORT || 3000;
 
+const io = new Server(server, {
+    cors: {
+        origin: 'http://localhost:5173',
+        credentials: true,
+    },
+});
+// set socket 
+setIo(io);
+// setup socket io with auth 
+io.use((socket, next) => {
+    try {
+        const cookieHeader = socket.handshake.headers.cookie || '';
+        // console.log(cookieHeader);
+        const tokenCookie = cookieHeader.split('; ').find((cookie) => cookie.startsWith('token='));
+        if (!tokenCookie) {
+            return next(new Error('Authentication required'))
+        }
+
+        const token = decodeURIComponent(tokenCookie.slice('token='.length));
+
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        
+        if (!decoded.email) {
+            return next(new Error('Invalid authentication token'));
+        }
+        socket.userEmail = decoded.email;
+        next();
+    }
+    catch (error) {
+        next(new Error('invalid or expried authentication token'))
+    }
+    
+})
+
+// check soket connected 
+// io.on('connection', (socket) => {
+//     console.log('Socket connected:', socket.id);
+
+//     socket.on('disconnect', () => {
+//         console.log('Socket disconnected:', socket.id);
+//     });
+// });
 // middleware 
 app.use(cors({
         origin: 'http://localhost:5173',
@@ -36,6 +85,108 @@ async function startServer() {
         // console.log("connected to the mongodb")
         // Initialize models
         const models = initializeModels(collection);
+        // check socket and put authenticate user private room 
+        io.on('connection', async (socket) => {
+            try {
+                // Find the authenticated user using the verified JWT email
+                const user = await models.User.findUserByEmail(socket.userEmail);
+                if (!user) {
+                    console.log('socket rejected: user not found');
+                    socket.disconnect(true);
+                    return;
+                }
+                // Create a private room for this user's MongoDB ID
+                const roomName = `user:${user._id.toString()}`;
+                await socket.join(roomName);
+
+                // for another priveate room 
+                socket.on('join-project', async (projectId, callback) => {
+                    try {
+                        // Validate project ID
+                        if (
+                            typeof projectId !== 'string' ||
+                            !/^[a-fA-F0-9]{24}$/.test(projectId)
+                        ) {
+                            return callback?.({
+                                success: false,
+                                message: 'Invalid project ID',
+                            });
+                        }
+
+                        const projectObjectId = new ObjectId(projectId);
+
+                        // Verify that the project exists
+                        const project = await collection.projects.findOne({
+                            _id: projectObjectId,
+                        });
+
+                        if (!project) {
+                            return callback?.({
+                                success: false,
+                                message: 'Project not found',
+                            });
+                        }
+
+                        // Verify authenticated user is a project member
+                    
+                        const membership = await collection.projectMembers.findOne({
+                            projectId: projectObjectId,
+                            userId: user._id,
+                        });
+
+                        if (!membership) {
+                            return callback?.({
+                                success: false,
+                                message: 'You are not a member of this project',
+                            });
+                        }
+
+                        // Join the project-specific room
+                        const projectRoom = `project:${projectId}`;
+                        await socket.join(projectRoom);
+
+                        console.log(`Socket joined project room: ${projectRoom}`);
+
+                        callback?.({
+                            success: true,
+                            room: projectRoom,
+                        });
+                    } catch (error) {
+                        console.error('Failed to join project room:', error.message);
+
+                        callback?.({
+                            success: false,
+                            message: 'Unable to join project room',
+                        });
+                    }
+                });
+
+                socket.on('leave-project', (projectId) => {
+                    if (
+                        typeof projectId !== 'string' ||
+                        !/^[a-fA-F0-9]{24}$/.test(projectId)
+                    ) {
+                        return;
+                    }
+
+                    const projectRoom = `project:${projectId}`;
+
+                    socket.leave(projectRoom);
+
+                    console.log(`Socket left project room: ${projectRoom}`);
+                });
+
+
+                console.log(`user joined private notoification room: ${user._id}`);
+                socket.on('disconnect', () => {
+                    console.log('socket disconnectd:', socket.id)
+                });
+            }
+            catch (error) {
+                console.error('socket connection setup failed:', error.message);
+                socket.disconnect(true);
+            }
+        })
         // post jwt token
         app.post('/getToken', (req, res) => {
             const logUser = req.body;
@@ -46,7 +197,7 @@ async function startServer() {
             console.log("toke", token)
             res.cookie('token', token,{
                 httpOnly: true,
-                ecure: process.env.NODE_ENV === 'production',
+                secure: process.env.NODE_ENV === 'production',
                 sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
                 path: '/',
                 maxAge: 60 * 60 * 1000
@@ -57,6 +208,8 @@ async function startServer() {
 
         // Initialize controllers
         const controllers = initializeControllers(models, collection);
+        // remmider overdue task 
+        startTaskReminderJob(collection, models.Notification);
 
         // Register routes
         projectRoutes(app, controllers);
@@ -71,9 +224,12 @@ async function startServer() {
             res.send('hello word')
         });
 
-        app.listen(port, () => {
-            console.log(`Example app liste on port ${port}`)
-        })
+        // app.listen(port, () => {
+        //     console.log(`Example app liste on port ${port}`)
+        // })
+        server.listen(port, () => {
+            console.log(`DevFlow server listening on port ${port}`);
+        });
     }
     catch (error) {
         console.error('Failed to start server:', error);

@@ -23,6 +23,20 @@ class NotificationModel{
 
         const result = await this.collection.insertOne(notificationData);
 
+        // 2. Build the complete notification, including its MongoDB ID
+        const savedNotification = {
+            ...notificationData,
+            _id: result.insertedId,
+        };
+        // 3. Send notification to the recipient's private room
+        try {
+            const io = getIo();
+            const roomName = `user:${notificationData.recipientId.toString()}`;
+
+            io.to(roomName).emit('notification', savedNotification);
+        } catch (error) {
+            console.error('Real-time notification delivery failed:', error.message);
+        }
         return result;
     }
 

@@ -1,3 +1,5 @@
+const { getIo } = require("../config/socket.js");
+
 class TaskController{
     constructor(models, collection) {
         this.Task = models.Task;
@@ -103,6 +105,19 @@ class TaskController{
             
             // updata task
             const result = await this.Task.updateTask(id, taskData);
+            // Emit the updated task to everyone in the same project
+            try {
+                const updatedTask = await this.Task.findTaskById(id);
+
+                if (updatedTask) {
+                    const io = getIo();
+                    const projectRoom = `project:${updatedTask.projectId.toString()}`;
+
+                    io.to(projectRoom).emit('task-updated', updatedTask);
+                }
+            } catch (socketError) {
+                console.error('Failed to emit task update:', socketError.message);
+            }
 
             if (
                 taskData.status &&
