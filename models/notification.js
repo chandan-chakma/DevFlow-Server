@@ -1,4 +1,5 @@
-const { ObjectId } = require("mongodb")
+const { ObjectId } = require("mongodb");
+const { getIo } = require("../config/socket.js");
 
 class NotificationModel{
     constructor(collection) {

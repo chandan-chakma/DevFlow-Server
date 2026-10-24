@@ -86,107 +86,164 @@ async function startServer() {
         // Initialize models
         const models = initializeModels(collection);
         // check socket and put authenticate user private room 
-        io.on('connection', async (socket) => {
-            try {
-                // Find the authenticated user using the verified JWT email
-                const user = await models.User.findUserByEmail(socket.userEmail);
-                if (!user) {
-                    console.log('socket rejected: user not found');
-                    socket.disconnect(true);
-                    return;
-                }
-                // Create a private room for this user's MongoDB ID
-                const roomName = `user:${user._id.toString()}`;
-                await socket.join(roomName);
 
-                // for another priveate room 
-                socket.on('join-project', async (projectId, callback) => {
-                    try {
-                        // Validate project ID
-                        if (
-                            typeof projectId !== 'string' ||
-                            !/^[a-fA-F0-9]{24}$/.test(projectId)
-                        ) {
-                            return callback?.({
-                                success: false,
-                                message: 'Invalid project ID',
-                            });
-                        }
+        io.on('connection', (socket) => {
+            console.log('🟢 New socket connection:', socket.id);
 
-                        const projectObjectId = new ObjectId(projectId);
+            // Temporary debugging: log events received by this socket
+            socket.onAny((eventName, ...args) => {
+                console.log('📨 Event received:', eventName, args[0] ?? '');
+            });
 
-                        // Verify that the project exists
-                        const project = await collection.projects.findOne({
-                            _id: projectObjectId,
-                        });
+            // Join a project room
+            socket.on('join-project', async (projectId, callback) => {
+                try {
+                    console.log('📥 join-project event received:', projectId);
 
-                        if (!project) {
-                            return callback?.({
-                                success: false,
-                                message: 'Project not found',
-                            });
-                        }
-
-                        // Verify authenticated user is a project member
-                    
-                        const membership = await collection.projectMembers.findOne({
-                            projectId: projectObjectId,
-                            userId: user._id,
-                        });
-
-                        if (!membership) {
-                            return callback?.({
-                                success: false,
-                                message: 'You are not a member of this project',
-                            });
-                        }
-
-                        // Join the project-specific room
-                        const projectRoom = `project:${projectId}`;
-                        await socket.join(projectRoom);
-
-                        console.log(`Socket joined project room: ${projectRoom}`);
-
-                        callback?.({
-                            success: true,
-                            room: projectRoom,
-                        });
-                    } catch (error) {
-                        console.error('Failed to join project room:', error.message);
-
-                        callback?.({
-                            success: false,
-                            message: 'Unable to join project room',
-                        });
-                    }
-                });
-
-                socket.on('leave-project', (projectId) => {
+                    // Validate project ID
                     if (
                         typeof projectId !== 'string' ||
                         !/^[a-fA-F0-9]{24}$/.test(projectId)
                     ) {
+                        return callback?.({
+                            success: false,
+                            message: 'Invalid project ID',
+                        });
+                    }
+
+                    // Get authenticated user from the verified socket token
+                    const user = await models.User.findUserByEmail(
+                        socket.userEmail
+                    );
+
+                    if (!user) {
+                        return callback?.({
+                            success: false,
+                            message: 'Authenticated user not found',
+                        });
+                    }
+
+                    // Verify that the project exists
+                    const projectObjectId = new ObjectId(projectId);
+
+                    const project = await collection.projects.findOne({
+                        _id: projectObjectId,
+                    });
+
+                    if (!project) {
+                        return callback?.({
+                            success: false,
+                            message: 'Project not found',
+                        });
+                    }
+
+                    // Verify project membership
+                    const membership = await collection.projectMembers.findOne({
+                        projectId: projectObjectId,
+                        userId: user._id,
+                    });
+
+                    console.log('🔎 Project membership:', {
+                        userId: user._id.toString(),
+                        projectId,
+                        membershipFound: !!membership,
+                    });
+
+                    if (!membership) {
+                        return callback?.({
+                            success: false,
+                            message: 'You are not a member of this project',
+                        });
+                    }
+
+                    // Join the project-specific room
+                    const projectRoom = `project:${projectId}`;
+
+                    await socket.join(projectRoom);
+
+                    console.log('✅ Socket joined project room:', {
+                        socketId: socket.id,
+                        room: projectRoom,
+                        rooms: [...socket.rooms],
+                    });
+
+                    callback?.({
+                        success: true,
+                        room: projectRoom,
+                    });
+                } catch (error) {
+                    console.error(
+                        '❌ Failed to join project room:',
+                        error.message
+                    );
+
+                    callback?.({
+                        success: false,
+                        message: 'Unable to join project room',
+                    });
+                }
+            });
+
+            // Leave a project room
+            socket.on('leave-project', (projectId) => {
+                if (
+                    typeof projectId !== 'string' ||
+                    !/^[a-fA-F0-9]{24}$/.test(projectId)
+                ) {
+                    return;
+                }
+
+                const projectRoom = `project:${projectId}`;
+
+                socket.leave(projectRoom);
+
+                console.log('🚪 Socket left project room:', {
+                    socketId: socket.id,
+                    room: projectRoom,
+                });
+            });
+
+            // Handle socket disconnection
+            socket.on('disconnect', (reason) => {
+                console.log('🔴 Socket disconnected:', {
+                    socketId: socket.id,
+                    reason,
+                });
+            });
+
+            // Set up the private notification room asynchronously
+            (async () => {
+                try {
+                    const user = await models.User.findUserByEmail(
+                        socket.userEmail
+                    );
+
+                    if (!user) {
+                        console.log('❌ Socket rejected: user not found');
+                        socket.disconnect(true);
                         return;
                     }
 
-                    const projectRoom = `project:${projectId}`;
+                    // Join the user's private room for notifications
+                    const roomName = `user:${user._id.toString()}`;
 
-                    socket.leave(projectRoom);
+                    await socket.join(roomName);
 
-                    console.log(`Socket left project room: ${projectRoom}`);
-                });
+                    console.log('🔔 Joined private user room:', {
+                        socketId: socket.id,
+                        room: roomName,
+                    });
+                } catch (error) {
+                    console.error(
+                        '❌ Socket connection setup failed:',
+                        error.message
+                    );
 
+                    socket.disconnect(true);
+                }
+            })();
+        });
 
-                console.log(`user joined private notoification room: ${user._id}`);
-                socket.on('disconnect', () => {
-                    console.log('socket disconnectd:', socket.id)
-                });
-            }
-            catch (error) {
-                console.error('socket connection setup failed:', error.message);
-                socket.disconnect(true);
-            }
-        })
         // post jwt token
         app.post('/getToken', (req, res) => {
             const logUser = req.body;

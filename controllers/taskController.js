@@ -1,3 +1,4 @@
+const { act } = require("react");
 const { getIo } = require("../config/socket.js");
 
 class TaskController{
@@ -26,6 +27,8 @@ class TaskController{
             // for notificaton add who create task 
             taskData.createdBy = actor._id;
             const result = await this.Task.createTask(taskData);
+            // Emit the newly created task to project members
+          
             // Create notification only when a task is assigned
             if (taskData.assignedTo && taskData.assignedTo !== "Unassigned" && taskData.assignedTo.toString() !== actor._id.toString()) {
                 await this.Notification.createNotification({
@@ -47,14 +50,40 @@ class TaskController{
                 taskTitle: taskData.title,
                 performedBy: {
                     userId: actor._id || "unknown",
-                    name: actor.displaName || "A team member"
+                    name: actor.displayName || "A team member"
                 }
             });
+            try {
+                const createdTask = await this.Task.findTaskById(
+                    result.insertedId.toString()
+                );
+
+                if (createdTask) {
+                    const io = getIo();
+                    const projectRoom = `project:${id}`;
+                    // console.log('📤 Emitting task-created:', {
+                    //     projectRoom,
+                    //     taskId: createdTask._id.toString(),
+                    // });
+                    // console.log(
+                    //     '👥 Sockets currently in project room:',
+                    //     [...(await io.in(projectRoom).allSockets())]
+                    // );
+
+
+                    io.to(projectRoom).emit('task-created', createdTask);
+                }
+            } catch (socketError) {
+                console.error(
+                    'Failed to emit task creation:',
+                    socketError.message
+                );
+            }
 
             res.send(result)
         }
         catch (error) {
-            console.log(error)
+            // console.log(error)
             res.status(500).send({message:'Error creating Task'})
         }
     }
@@ -102,18 +131,30 @@ class TaskController{
             if (!existingTask) {
                 return res.status(404).send({message:'task not found'})
             }
+            const actor = await this.collection.users.findOne({
+                email: req.token_email
+            });
+
+            if (!actor) {
+                return res.status(404).send({
+                    message: "Authenticated user not found"
+                });
+            }
             
             // updata task
             const result = await this.Task.updateTask(id, taskData);
             // Emit the updated task to everyone in the same project
             try {
                 const updatedTask = await this.Task.findTaskById(id);
+                // console.log("Update result:", result);
+                // console.log("Updated task from MongoDB:", updatedTask);
 
                 if (updatedTask) {
                     const io = getIo();
                     const projectRoom = `project:${updatedTask.projectId.toString()}`;
 
                     io.to(projectRoom).emit('task-updated', updatedTask);
+                    // console.log("📢 Task update emitted to:", projectRoom);
                 }
             } catch (socketError) {
                 console.error('Failed to emit task update:', socketError.message);
@@ -121,15 +162,16 @@ class TaskController{
 
             if (
                 taskData.status &&
-                taskData.status !== existingTask.status
+                taskData.status !== existingTask.status &&
+                existingTask.createdBy.toString() !== actor._id.toString()
             ) {
                 await this.Notification.createNotification({
                     recipientId: existingTask.createdBy,
-                    actorId: existingTask.createdBy,
+                    actorId: actor._id,
                     projectId: existingTask.projectId,
                     taskId: existingTask._id,
                     type: "task_status_changed",
-                    message: `The status of your task "${existingTask.title}" changed to ${taskData.status}`
+                    message: `${actor.displayName || "A team member"} changed the status of your task "${existingTask.title}" to ${taskData.status}`
                 });
                 await this.Activity.createActivity({
                     projectId: existingTask.projectId,
@@ -140,8 +182,8 @@ class TaskController{
                     taskTitle: existingTask.title,
                     status: taskData.status,
                     performedBy: {
-                        userId: req.user?.uid || "unknown",
-                        name: req.user?.name || "A team member"
+                        userId: actor._id || "unknown",
+                        name: actor.displayName || "A team member"
                     }
                 });
             }
@@ -156,34 +198,66 @@ class TaskController{
     async deleteTask(req, res) {
         try {
             const id = req.params.id;
-            // 1. Get task details before deletion
+
+            // console.log("🗑️ Delete request received:", id);
+
             const task = await this.Task.findTaskById(id);
 
             if (!task) {
+                // console.log("❌ Task not found:", id);
                 return res.status(404).send({
                     message: "Task not found"
                 });
             }
+
+            // console.log("✅ Task found:", {
+            //     taskId: task._id.toString(),
+            //     projectId: task.projectId.toString()
+            // });
+
             const result = await this.Task.Delete(id);
-            // 3. Record deletion activity
-            if (result.deletedCount === 1) {
-                await this.Activity.createActivity({
-                    projectId: task.projectId,
-                    taskId: task._id,
-                    action: "deleted",
-                    entityType: "task",
-                    description: `Deleted task: ${task.title}`,
-                    taskTitle: task.title,
-                    performedBy: {
-                        userId: req.user?.uid || "unknown",
-                        name: req.user?.name || "A team member"
-                    }
+
+            // console.log("📦 Delete database result:", result);
+
+            if (result.deletedCount !== 1) {
+                return res.status(404).send({
+                    message: "Task not found"
                 });
             }
-            res.send(result);
-        }
-        catch (error) {
-            res.status(500).send({messgae:'Error Deleting the Task'})
+
+            await this.Activity.createActivity({
+                projectId: task.projectId,
+                taskId: task._id,
+                action: "deleted",
+                entityType: "task",
+                description: `Deleted task: ${task.title}`,
+                taskTitle: task.title,
+                performedBy: {
+                    userId: req.user?.uid || "unknown",
+                    name: req.user?.name || "A team member"
+                }
+            });
+
+            const io = getIo();
+            const projectRoom = `project:${task.projectId.toString()}`;
+
+            // console.log("📤 Emitting task-deleted:", {
+            //     projectRoom,
+            //     taskId: task._id.toString(),
+            //     sockets: await io.in(projectRoom).fetchSockets()
+            //         .then(sockets => sockets.map(socket => socket.id))
+            // });
+
+            io.to(projectRoom).emit("task-deleted", {
+                taskId: task._id.toString()
+            });
+
+            return res.send(result);
+        } catch (error) {
+            console.error("❌ Error deleting task:", error);
+            return res.status(500).send({
+                message: "Error deleting the task"
+            });
         }
     }
 }

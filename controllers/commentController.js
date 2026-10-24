@@ -1,3 +1,5 @@
+const { getIo } = require("../config/socket.js");
+
 class CommentController{
     constructor(models, collection) {
         this.Comment = models.Comment;
@@ -39,6 +41,29 @@ class CommentController{
             });
             // creatae notification 
             if (task) {
+                // for connect socket io 
+                try {
+                    const comments = await this.Comment.findTaskcomments(id);
+
+                    const createdComment = comments.find(
+                        comment =>
+                            comment._id.toString() === result.insertedId.toString()
+                    );
+
+                    if (createdComment) {
+                        const io = getIo();
+                        const projectRoom = `project:${task.projectId.toString()}`;
+                        console.log('📢 Emitting new-comment to room:', projectRoom);
+                        console.log('Comment:', createdComment);
+
+                        io.to(projectRoom).emit("new-comment", createdComment);
+                    }
+                } catch (socketError) {
+                    console.error(
+                        "Failed to emit new comment:",
+                        socketError.message
+                    );
+                }
                 // Collect the task creator and assigned member
                 const recipients = [
                     task.createdBy,

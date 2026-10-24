@@ -8,10 +8,41 @@ class ProjectController {
     async postProject(req, res) {
         try {
             const projectData = req.body;
+            // Get the authenticated user
+            const email = req.token_email;
+
+            if (!email) {
+                return res.status(401).send({
+                    message: "Authentication required",
+                });
+            }
+
+            const user = await this.collection.users.findOne({ email });
+
+            if (!user) {
+                return res.status(404).send({
+                    message: "User not found",
+                });
+            }
             // save project post 
             const result = await this.Project.createProject(projectData);
             // get newly project id 
             const projectId = result.insertedId;
+            // Automatically add the creator to projectMembers
+            await this.collection.projectMembers.updateOne(
+                {
+                    projectId: projectId,
+                    userId: user._id,
+                },
+                {
+                    $setOnInsert: {
+                        projectId: projectId,
+                        userId: user._id,
+                        joinedAt: new Date(),
+                    },
+                },
+                { upsert: true }
+            );
             // 3. Save an activity record
             await this.Activity.createActivity({
                 projectId: projectId,
