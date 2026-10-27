@@ -21,6 +21,7 @@ const http = require('http');
 const { Server } = require('socket.io');
 const { setIo } = require('./config/socket.js');
 const { ObjectId } = require('mongodb');
+const teamRoute = require('./routes/teamRoute.js');
 
 const app = express();
 const server = http.createServer(app)
@@ -275,7 +276,8 @@ async function startServer() {
         activityRoute(app, controllers);
         UserRoute(app, controllers);
         ProjectMemberRoute(app, controllers);
-        notificationRoute(app,controllers)
+        notificationRoute(app, controllers);
+        teamRoute(app, controllers);
 
         app.get('/', (req, res) => {
             res.send('hello word')

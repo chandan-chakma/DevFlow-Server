@@ -4,6 +4,7 @@ const NotificatonController = require("./notificationController.js");
 const ProjectController = require("./projectController.js");
 const ProjectMembersController = require("./projectMembersController.js");
 const TaskController = require("./taskController.js");
+const TeamController = require("./teamController.js");
 const UserController = require("./userController.js");
 
 function initializeControllers(models, collection) {
@@ -14,7 +15,9 @@ function initializeControllers(models, collection) {
         activity: new ActivityController(models, collection),
         user: new UserController(models, collection),
         projectMember: new ProjectMembersController(models, collection),
-        notification:new NotificatonController(models,collection)
+        notification: new NotificatonController(models, collection),
+        // New controller
+        team: new TeamController(models, collection)
     }
 }
 module.exports={initializeControllers}
