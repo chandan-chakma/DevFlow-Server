@@ -176,5 +176,54 @@ class TaskModel{
         const result = await this.collection.deleteOne(query)
         return result;
     }
+
+
+
+    async findTasksForCalendar(userId) {
+        const pipeline = [
+            {
+                $match: {
+                    assignedTo: userId,
+                    dueDate: { $exists: true, $ne: null, $ne: "" }
+                }
+            },
+            {
+                $sort: {
+                    dueDate: 1
+                }
+            },
+            {
+                $lookup: {
+                    from: "projects",
+                    localField: "projectId",
+                    foreignField: "_id",
+                    as: "project"
+                }
+            },
+            {
+                $unwind: {
+                    path: "$project",
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+            {
+                $project: {
+                    title: 1,
+                    description: 1,
+                    status: 1,
+                    priority: 1,
+                    dueDate: 1,
+                    projectId: 1,
+                    assignedTo: 1,
+                    createdAt: 1,
+                    updatedAt: 1,
+                    projectName: "$project.name"
+                }
+            }
+        ];
+
+        return await this.collection.aggregate(pipeline).toArray();
+    }
+
 }
 module.exports=TaskModel

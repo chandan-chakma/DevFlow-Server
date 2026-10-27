@@ -27,5 +27,10 @@ function TaskRoute(app, controllers) {
     app.delete('/tasks/:id', verfyToken, (req, res) => {
         TaskController.deleteTask(req, res);
     })
+
+
+    app.get('/my-calendar-tasks', verfyToken, (req, res) => {
+        TaskController.getMyCalendarTasks(req, res);
+    });
 }
 module.exports = TaskRoute;

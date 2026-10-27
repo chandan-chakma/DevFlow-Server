@@ -260,6 +260,36 @@ class TaskController{
             });
         }
     }
+
+
+
+
+    async getMyCalendarTasks(req, res) {
+        try {
+            const user = await this.collection.users.findOne({
+                email: req.token_email
+            });
+
+            if (!user) {
+                return res.status(404).send({
+                    message: "Authenticated user not found"
+                });
+            }
+
+            const tasks = await this.Task.findTasksForCalendar(
+                user._id
+            );
+
+            return res.send(tasks);
+        } catch (error) {
+            console.error("Error getting calendar tasks:", error);
+
+            return res.status(500).send({
+                message: "Failed to get calendar tasks"
+            });
+        }
+    }
+
 }
 
 module.exports = TaskController
