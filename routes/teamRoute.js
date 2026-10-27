@@ -6,6 +6,14 @@ function teamRoute(app, controllers) {
     app.get("/team/summary", verfyToken, (req, res) => {
         TeamController.getTeamSummary(req, res);
     });
+
+
+    app.get(
+        "/team/members",
+        verfyToken,
+        (req, res) => TeamController.getTeamMembers(req, res)
+    );
+
 }
 
 module.exports = teamRoute;

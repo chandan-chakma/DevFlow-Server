@@ -24,5 +24,21 @@ class ActivityModel{
         return result;
     }
 
+    // find activity by project 
+
+    async findActivitiesByProjects(projectIds) {
+        if (!projectIds.length) {
+            return [];
+        }
+
+        return await this.collection
+            .find({
+                projectId: { $in: projectIds }
+            })
+            .sort({ createdAt: -1 })
+            .toArray();
+    }
+
+
 }
 module.exports = ActivityModel;
