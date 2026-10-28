@@ -14,5 +14,15 @@ function DashboardRoute(app, controller) {
     app.get("/dashboard/task-status-chart",verfyToken,DashboardController.getTaskStatus.bind(DashboardController)
     );
 
+    // get recent project route 
+    app.get("/dashboard/recent-projects",verfyToken,
+        DashboardController.getRecentProjects.bind(DashboardController)
+    );
+
+    // get my 5 task 
+    app.get( "/dashboard/my-recent-tasks",verfyToken,
+       DashboardController.getMyRecentTasks.bind(DashboardController)
+    );
+
 }
 module.exports = DashboardRoute;

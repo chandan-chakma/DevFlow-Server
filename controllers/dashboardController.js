@@ -460,6 +460,89 @@ class DashboardController {
         }
     }
 
+    // get recent 5 Project
+    async getRecentProjects(req, res) {
+        try {
+            const email = req.token_email;
+
+            const user = await this.User.findOne({ email });
+
+            if (!user) {
+                return res.status(404).json({
+                    message: "User not found"
+                });
+            }
+
+            // Find projects the user belongs to
+            const memberships = await this.ProjectMembers
+                .find({ userId: user._id })
+                .toArray();
+
+            const projectIds = memberships.map(
+                (member) => member.projectId
+            );
+
+            if (projectIds.length === 0) {
+                return res.status(200).json({
+                    projects: []
+                });
+            }
+
+            // Fetch the five most recently created projects
+            const projects = await this.Projects
+                .find({ _id: { $in: projectIds } })
+                .sort({ createdAt: -1 })
+                .limit(5)
+                .toArray();
+
+            return res.status(200).json({ projects });
+
+        } catch (error) {
+            console.error("Recent projects error:", error);
+
+            return res.status(500).json({
+                message: "Failed to load recent projects"
+            });
+        }
+    }
+
+
+    // get my first 5 task 
+    async getMyRecentTasks(req, res) {
+        try {
+            const email = req.token_email;
+
+            // Find the logged-in user
+            const user = await this.User.findOne({ email });
+
+            if (!user) {
+                return res.status(404).json({
+                    message: "User not found"
+                });
+            }
+
+            // Find tasks assigned to this user
+            const tasks = await this.Tasks
+                .find({
+                    assignedTo: user._id
+                })
+                .sort({ createdAt: -1 })
+                .limit(5)
+                .toArray();
+
+            return res.status(200).json({
+                tasks
+            });
+
+        } catch (error) {
+            console.error("My recent tasks error:", error);
+
+            return res.status(500).json({
+                message: "Failed to load recent tasks"
+            });
+        }
+    }
+
 }
 
 module.exports = DashboardController;
