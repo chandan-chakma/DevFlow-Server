@@ -6,8 +6,12 @@ function DashboardRoute(app, controller) {
     app.get("/dashboard/summary",verfyToken,
         DashboardController.getSummary.bind(DashboardController)
     );
+
     app.get("/dashboard/overview-chart",verfyToken,
         DashboardController.getOverviewChart.bind(DashboardController)
+    );
+
+    app.get("/dashboard/task-status-chart",verfyToken,DashboardController.getTaskStatus.bind(DashboardController)
     );
 
 }

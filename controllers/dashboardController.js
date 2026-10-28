@@ -9,7 +9,7 @@ class DashboardController {
         this.User = collection.users;
     }
 
-    // Get dashboard summary statistics
+    // Get dashboard summary statistics count
     async getSummary(req, res) {
         try {
             // Get the authenticated user
@@ -374,6 +374,88 @@ class DashboardController {
 
             return res.status(500).json({
                 message: "Failed to load overview chart"
+            });
+        }
+    }
+
+        // show task chart 
+    async getTaskStatus(req, res) {
+        try {
+            const email = req.token_email;
+
+            // Find the logged-in user
+            const user = await this.User.findOne({ email });
+
+            if (!user) {
+                return res.status(404).json({
+                    message: "User not found"
+                });
+            }
+
+            // Get projects the user belongs to
+            const memberships = await this.ProjectMembers
+                .find({ userId: user._id })
+                .toArray();
+
+            const projectIds = memberships.map(
+                (member) => member.projectId
+            );
+
+            // Initialize all three statuses to zero
+            const statusCounts = {
+                "To Do": 0,
+                "In Progress": 0,
+                "Done": 0
+            };
+
+            // Count tasks belonging to those projects
+            if (projectIds.length > 0) {
+                const results = await this.Tasks.aggregate([
+                    {
+                        $match: {
+                            projectId: { $in: projectIds }
+                        }
+                    },
+                    {
+                        $group: {
+                            _id: "$status",
+                            count: { $sum: 1 }
+                        }
+                    }
+                ]).toArray();
+
+                results.forEach((item) => {
+                    if (Object.hasOwn(statusCounts, item._id)) {
+                        statusCounts[item._id] = item.count;
+                    }
+                });
+            }
+
+            const taskData = [
+                {
+                    name: "To Do",
+                    value: statusCounts["To Do"],
+                    color: "#D9E0F0"
+                },
+                {
+                    name: "In Progress",
+                    value: statusCounts["In Progress"],
+                    color: "#4F7DF3"
+                },
+                {
+                    name: "Done",
+                    value: statusCounts["Done"],
+                    color: "#45B89C"
+                }
+            ];
+
+            return res.status(200).json({ taskData });
+
+        } catch (error) {
+            console.error("Task status error:", error);
+
+            return res.status(500).json({
+                message: "Failed to load task status"
             });
         }
     }
