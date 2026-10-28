@@ -24,5 +24,10 @@ function DashboardRoute(app, controller) {
        DashboardController.getMyRecentTasks.bind(DashboardController)
     );
 
+    // get recent activity 
+    app.get("/dashboard/recent-activities",verfyToken,
+        DashboardController.getRecentActivities.bind(DashboardController)
+    );
+
 }
 module.exports = DashboardRoute;

@@ -7,6 +7,8 @@ class DashboardController {
         this.Tasks = collection.tasks;
         this.ProjectMembers = collection.projectMembers;
         this.User = collection.users;
+        // this.Activity = models.Activity;
+        this.Activity = models.Activity;
     }
 
     // Get dashboard summary statistics count
@@ -539,6 +541,53 @@ class DashboardController {
 
             return res.status(500).json({
                 message: "Failed to load recent tasks"
+            });
+        }
+    }
+
+
+    // get recent 5 activity 
+    async getRecentActivities(req, res) {
+        try {
+            const email = req.token_email;
+
+            const user = await this.User.findOne({ email });
+
+            if (!user) {
+                return res.status(404).json({
+                    message: "User not found"
+                });
+            }
+
+            // Find projects the user belongs to
+            const memberships = await this.ProjectMembers
+                .find({ userId: user._id })
+                .toArray();
+
+            const projectIds = memberships.map(
+                (member) => member.projectId
+            );
+
+            if (projectIds.length === 0) {
+                return res.status(200).json({
+                    activities: []
+                });
+            }
+
+            // Fetch the five most recent activities
+            const activities = await this.Activity.findActivitiesByProjects(projectIds);
+
+            const recentActivities = activities.slice(0, 5);
+
+            return res.status(200).json({
+                activities: recentActivities
+            });
+
+        } catch (error) {
+            console.error("Recent activities error:", error);
+
+            return res.status(500).json({
+                message: "Failed to load recent activities"
             });
         }
     }
