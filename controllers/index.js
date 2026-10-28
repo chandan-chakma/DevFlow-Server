@@ -1,5 +1,6 @@
 const ActivityController = require("./activityController.js");
 const CommentController = require("./commentController.js");
+const DashboardController = require("./dashboardController.js");
 const NotificatonController = require("./notificationController.js");
 const ProjectController = require("./projectController.js");
 const ProjectMembersController = require("./projectMembersController.js");
@@ -17,7 +18,8 @@ function initializeControllers(models, collection) {
         projectMember: new ProjectMembersController(models, collection),
         notification: new NotificatonController(models, collection),
         // New controller
-        team: new TeamController(models, collection)
+        team: new TeamController(models, collection),
+        dashboard: new DashboardController(models,collection)
     }
 }
 module.exports={initializeControllers}

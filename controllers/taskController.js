@@ -140,6 +140,16 @@ class TaskController{
                     message: "Authenticated user not found"
                 });
             }
+
+            // Track when a task becomes completed
+            if (taskData.status && taskData.status !== existingTask.status) {
+                if (taskData.status === "Done") {
+                    taskData.completedAt = new Date();
+                } else {
+                    taskData.completedAt = null;
+                }
+            }
+
             
             // updata task
             const result = await this.Task.updateTask(id, taskData);

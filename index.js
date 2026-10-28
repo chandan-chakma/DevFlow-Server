@@ -22,6 +22,7 @@ const { Server } = require('socket.io');
 const { setIo } = require('./config/socket.js');
 const { ObjectId } = require('mongodb');
 const teamRoute = require('./routes/teamRoute.js');
+const DashboardRoute = require('./models/dashboardRoute.js');
 
 const app = express();
 const server = http.createServer(app)
@@ -278,6 +279,8 @@ async function startServer() {
         ProjectMemberRoute(app, controllers);
         notificationRoute(app, controllers);
         teamRoute(app, controllers);
+        DashboardRoute(app, controllers);
+
 
         app.get('/', (req, res) => {
             res.send('hello word')
