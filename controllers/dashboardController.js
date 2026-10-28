@@ -207,6 +207,177 @@ class DashboardController {
             });
         }
     }
+
+
+    // Get weekly task activity for the overview chart
+
+    async getOverviewChart(req, res) {
+        try {
+            const email = req.token_email;
+            const range = req.query.range || "this-week";
+
+            // Validate the selected date range
+            const validRanges = [
+                "this-week",
+                "last-week",
+                "last-30-days"
+            ];
+
+            if (!validRanges.includes(range)) {
+                return res.status(400).json({
+                    message: "Invalid chart date range"
+                });
+            }
+
+            // Find authenticated user
+            const user = await this.User.findOne({ email });
+
+            if (!user) {
+                return res.status(404).json({
+                    message: "User not found"
+                });
+            }
+
+            // Get projects the user belongs to
+            const projectResults = await this.ProjectMembers.aggregate([
+                {
+                    $match: {
+                        userId: user._id
+                    }
+                },
+                {
+                    $group: {
+                        _id: "$projectId"
+                    }
+                }
+            ]).toArray();
+
+            const projectIds = projectResults.map(
+                (project) => project._id
+            );
+
+            // Calculate date range
+            const now = new Date();
+
+            const today = new Date(now);
+            today.setHours(0, 0, 0, 0);
+
+            let startDate;
+            let endDate;
+            let numberOfDays;
+
+            if (range === "this-week") {
+                // Monday through Sunday of the current week
+                startDate = new Date(today);
+
+                const daysSinceMonday =
+                    (startDate.getDay() + 6) % 7;
+
+                startDate.setDate(
+                    startDate.getDate() - daysSinceMonday
+                );
+
+                endDate = new Date(startDate);
+                endDate.setDate(endDate.getDate() + 7);
+
+                numberOfDays = 7;
+            } else if (range === "last-week") {
+                // Monday through Sunday of the previous week
+                endDate = new Date(today);
+
+                const daysSinceMonday =
+                    (endDate.getDay() + 6) % 7;
+
+                endDate.setDate(
+                    endDate.getDate() - daysSinceMonday
+                );
+
+                startDate = new Date(endDate);
+                startDate.setDate(startDate.getDate() - 7);
+
+                numberOfDays = 7;
+            } else {
+                // Today and the previous 29 days
+                endDate = new Date(today);
+                endDate.setDate(endDate.getDate() + 1);
+
+                startDate = new Date(today);
+                startDate.setDate(startDate.getDate() - 29);
+
+                numberOfDays = 30;
+            }
+
+            // Fetch tasks created or completed during this range
+            const tasks = await this.Tasks.find({
+                projectId: { $in: projectIds },
+                $or: [
+                    {
+                        createdAt: {
+                            $gte: startDate,
+                            $lt: endDate
+                        }
+                    },
+                    {
+                        completedAt: {
+                            $gte: startDate,
+                            $lt: endDate
+                        }
+                    }
+                ]
+            }).toArray();
+
+            // Generate chart data
+            const chartData = Array.from(
+                { length: numberOfDays },
+                (_, index) => {
+                    const dayStart = new Date(startDate);
+                    dayStart.setDate(dayStart.getDate() + index);
+
+                    const dayEnd = new Date(dayStart);
+                    dayEnd.setDate(dayEnd.getDate() + 1);
+
+                    const created = tasks.filter((task) =>
+                        task.createdAt instanceof Date &&
+                        task.createdAt >= dayStart &&
+                        task.createdAt < dayEnd
+                    ).length;
+
+                    const completed = tasks.filter((task) =>
+                        task.status === "Done" &&
+                        task.completedAt instanceof Date &&
+                        task.completedAt >= dayStart &&
+                        task.completedAt < dayEnd
+                    ).length;
+
+                    // Show weekdays for weekly ranges,
+                    // and calendar dates for the 30-day range
+                    const day = range === "last-30-days"
+                        ? `${dayStart.getMonth() + 1}/${dayStart.getDate()}`
+                        : dayStart.toLocaleDateString("en-US", {
+                            weekday: "short"
+                        });
+
+                    return {
+                        day,
+                        created,
+                        completed
+                    };
+                }
+            );
+
+            return res.status(200).json({
+                chartData
+            });
+
+        } catch (error) {
+            console.error("Overview chart error:", error);
+
+            return res.status(500).json({
+                message: "Failed to load overview chart"
+            });
+        }
+    }
+
 }
 
 module.exports = DashboardController;
