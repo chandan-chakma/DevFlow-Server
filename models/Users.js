@@ -39,6 +39,14 @@ class UserModel{
         return await this.collection.updateOne(query,updateDoc)
     }
 
+    // delet user
+
+    async deleteUser(id) {
+        const query = { _id: new ObjectId(id) }
+        const result = await this.collection.deleteOne(query);
+        return result;
+    }
+
 
 }
 module.exports = UserModel;

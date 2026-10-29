@@ -23,5 +23,12 @@ function UserRoute(app, controllers) {
     app.get('/users/role', verfyToken, (req, res) =>
         UserController.getUserRole(req, res)
     );
+
+    // delete user 
+    // Delete user (admin only)
+    app.delete('/users/:id', verfyToken, (req, res) =>
+        UserController.deleteUser(req, res)
+    );
+
 }
 module.exports = UserRoute;

@@ -1,3 +1,5 @@
+const { ObjectId } = require("mongodb");
+
 class UserController{
     constructor(models, collection) {
         this.User = models.User;
@@ -65,6 +67,67 @@ class UserController{
         } catch (error) {
             res.status(500).send({
                 message: 'Failed to get user role'
+            });
+        }
+    }
+
+    // delete user 
+    // Delete user (admin only)
+    async deleteUser(req, res) {
+        try {
+            const { id } = req.params;
+            const requesterEmail = req.token_email;
+
+            if (!ObjectId.isValid(id)) {
+                return res.status(400).send({
+                    message: 'Invalid user ID'
+                });
+            }
+
+            // Check the requester is an admin
+            const requester = await this.User.findUserByEmail(requesterEmail);
+
+            if (!requester || requester.role !== 'admin') {
+                return res.status(403).send({
+                    message: 'Access denied. Admin only.'
+                });
+            }
+
+            // Find the target user
+            const targetUser = await this.User.collection.findOne({
+                _id: new ObjectId(id)
+            });
+
+            if (!targetUser) {
+                return res.status(404).send({
+                    message: 'User not found'
+                });
+            }
+
+            // Prevent deleting your own account
+            if (requester._id.equals(targetUser._id)) {
+                return res.status(400).send({
+                    message: 'You cannot delete your own account.'
+                });
+            }
+
+            const result = await this.User.deleteUser(id);
+
+            if (result.deletedCount === 0) {
+                return res.status(404).send({
+                    message: 'User not found'
+                });
+            }
+
+            return res.send({
+                message: 'User deleted successfully',
+                deletedCount: result.deletedCount
+            });
+        } catch (error) {
+            console.error('Delete user error:', error);
+
+            return res.status(500).send({
+                message: 'Error deleting user'
             });
         }
     }
