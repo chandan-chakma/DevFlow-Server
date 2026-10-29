@@ -12,5 +12,16 @@ function UserRoute(app, controllers) {
     app.get('/users', verfyToken, (req, res) => {
         UserController.getAllUser(req, res);
     })
+
+    // update user role 
+    // Update user role (admin only)
+    app.patch('/users/:id/role', verfyToken, (req, res) => UserController.updateUserRole(req, res));
+
+
+    // get user role 
+    // Get logged-in user's role
+    app.get('/users/role', verfyToken, (req, res) =>
+        UserController.getUserRole(req, res)
+    );
 }
 module.exports = UserRoute;
