@@ -122,85 +122,212 @@ class TaskController{
     }
 
     // update task data 
+    // async updatedTask(req, res) {
+    //     try {
+    //         const id = req.params.id;
+    //         const taskData = req.body;
+    //         // get thet task before updateing 
+    //         const existingTask = await this.Task.findTaskById(id);
+    //         if (!existingTask) {
+    //             return res.status(404).send({message:'task not found'})
+    //         }
+    //         const actor = await this.collection.users.findOne({
+    //             email: req.token_email
+    //         });
+
+    //         if (!actor) {
+    //             return res.status(404).send({
+    //                 message: "Authenticated user not found"
+    //             });
+    //         }
+
+    //         // Track when a task becomes completed
+    //         if (taskData.status && taskData.status !== existingTask.status) {
+    //             if (taskData.status === "Done") {
+    //                 taskData.completedAt = new Date();
+    //             } else {
+    //                 taskData.completedAt = null;
+    //             }
+    //         }
+
+            
+    //         // updata task
+    //         const result = await this.Task.updateTask(id, taskData);
+    //         // Emit the updated task to everyone in the same project
+    //         try {
+    //             const updatedTask = await this.Task.findTaskById(id);
+    //             // console.log("Update result:", result);
+    //             // console.log("Updated task from MongoDB:", updatedTask);
+
+    //             if (updatedTask) {
+    //                 const io = getIo();
+    //                 const projectRoom = `project:${updatedTask.projectId.toString()}`;
+
+    //                 io.to(projectRoom).emit('task-updated', updatedTask);
+    //                 // console.log("📢 Task update emitted to:", projectRoom);
+    //             }
+    //         } catch (socketError) {
+    //             console.error('Failed to emit task update:', socketError.message);
+    //         }
+
+    //         if (
+    //             taskData.status &&
+    //             taskData.status !== existingTask.status &&
+    //             existingTask.createdBy.toString() !== actor._id.toString()
+    //         ) {
+    //             await this.Notification.createNotification({
+    //                 recipientId: existingTask.createdBy,
+    //                 actorId: actor._id,
+    //                 projectId: existingTask.projectId,
+    //                 taskId: existingTask._id,
+    //                 type: "task_status_changed",
+    //                 message: `${actor.displayName || "A team member"} changed the status of your task "${existingTask.title}" to ${taskData.status}`
+    //             });
+    //             await this.Activity.createActivity({
+    //                 projectId: existingTask.projectId,
+    //                 taskId: existingTask._id,
+    //                 action: "status",
+    //                 entityType: "task",
+    //                 description: `Changed task status from ${existingTask.status} to ${taskData.status}`,
+    //                 taskTitle: existingTask.title,
+    //                 status: taskData.status,
+    //                 performedBy: {
+    //                     userId: actor._id || "unknown",
+    //                     name: actor.displayName || "A team member"
+    //                 }
+    //             });
+    //         }
+    //         res.send(result);
+    //     }
+    //     catch (error) {
+    //         res.status(500).send({ message: 'Error updating task' })
+    //     }
+    // }
+    // Update task data
     async updatedTask(req, res) {
         try {
             const id = req.params.id;
             const taskData = req.body;
-            // get thet task before updateing 
+
+            // 1. Find the existing task
             const existingTask = await this.Task.findTaskById(id);
+
             if (!existingTask) {
-                return res.status(404).send({message:'task not found'})
+                return res.status(404).send({
+                    message: 'Task not found'
+                });
             }
+
+            // 2. Find the authenticated user
             const actor = await this.collection.users.findOne({
                 email: req.token_email
             });
 
             if (!actor) {
                 return res.status(404).send({
-                    message: "Authenticated user not found"
+                    message: 'Authenticated user not found'
                 });
             }
 
-            // Track when a task becomes completed
-            if (taskData.status && taskData.status !== existingTask.status) {
-                if (taskData.status === "Done") {
+            // 3. Check whether the task status is changing
+            const isStatusChanging =
+                taskData.status &&
+                taskData.status !== existingTask.status;
+
+            // 4. Only the assigned user can change task status
+            if (isStatusChanging) {
+                if (
+                    !existingTask.assignedTo ||
+                    existingTask.assignedTo.toString() !== actor._id.toString()
+                ) {
+                    return res.status(403).send({
+                        message: 'Only the assigned user can update this task status.'
+                    });
+                }
+
+                // Validate allowed task statuses
+                const allowedStatuses = [
+                    'To Do',
+                    'In Progress',
+                    'Done'
+                ];
+
+                if (!allowedStatuses.includes(taskData.status)) {
+                    return res.status(400).send({
+                        message: 'Invalid task status.'
+                    });
+                }
+
+                // Track task completion
+                if (taskData.status === 'Done') {
                     taskData.completedAt = new Date();
                 } else {
                     taskData.completedAt = null;
                 }
             }
 
-            
-            // updata task
+            // 5. Update task in MongoDB
             const result = await this.Task.updateTask(id, taskData);
-            // Emit the updated task to everyone in the same project
+
+            // 6. Emit updated task to project members
             try {
                 const updatedTask = await this.Task.findTaskById(id);
-                // console.log("Update result:", result);
-                // console.log("Updated task from MongoDB:", updatedTask);
 
                 if (updatedTask) {
                     const io = getIo();
                     const projectRoom = `project:${updatedTask.projectId.toString()}`;
 
                     io.to(projectRoom).emit('task-updated', updatedTask);
-                    // console.log("📢 Task update emitted to:", projectRoom);
                 }
             } catch (socketError) {
-                console.error('Failed to emit task update:', socketError.message);
+                console.error(
+                    'Failed to emit task update:',
+                    socketError.message
+                );
             }
 
-            if (
-                taskData.status &&
-                taskData.status !== existingTask.status &&
-                existingTask.createdBy.toString() !== actor._id.toString()
-            ) {
-                await this.Notification.createNotification({
-                    recipientId: existingTask.createdBy,
-                    actorId: actor._id,
-                    projectId: existingTask.projectId,
-                    taskId: existingTask._id,
-                    type: "task_status_changed",
-                    message: `${actor.displayName || "A team member"} changed the status of your task "${existingTask.title}" to ${taskData.status}`
-                });
+            // 7. Create notification and activity when status changes
+            if (isStatusChanging) {
+
+                // Notify task creator if someone else changes the status
+                if (
+                    existingTask.createdBy &&
+                    existingTask.createdBy.toString() !== actor._id.toString()
+                ) {
+                    await this.Notification.createNotification({
+                        recipientId: existingTask.createdBy,
+                        actorId: actor._id,
+                        projectId: existingTask.projectId,
+                        taskId: existingTask._id,
+                        type: 'task_status_changed',
+                        message: `${actor.displayName || 'A team member'} changed the status of your task "${existingTask.title}" to ${taskData.status}`
+                    });
+                }
+
+                // Record activity whenever status changes
                 await this.Activity.createActivity({
                     projectId: existingTask.projectId,
                     taskId: existingTask._id,
-                    action: "status",
-                    entityType: "task",
+                    action: 'status',
+                    entityType: 'task',
                     description: `Changed task status from ${existingTask.status} to ${taskData.status}`,
                     taskTitle: existingTask.title,
                     status: taskData.status,
                     performedBy: {
-                        userId: actor._id || "unknown",
-                        name: actor.displayName || "A team member"
+                        userId: actor._id,
+                        name: actor.displayName || 'A team member'
                     }
                 });
             }
-            res.send(result);
-        }
-        catch (error) {
-            res.status(500).send({ message: 'Error updating task' })
+
+            return res.send(result);
+
+        } catch (error) {
+            console.error('Error updating task:', error);
+
+            return res.status(500).send({
+                message: 'Error updating task'
+            });
         }
     }
     

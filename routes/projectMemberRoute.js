@@ -12,5 +12,14 @@ function ProjectMemberRoute(app,controllers){
     app.get('/project-members/:projectId', verfyToken, (req, res) => {
         ProjectMembersController.getMembersByProjectId(req,res)
     })
+
+    app.patch('/project-members/:projectId/:userId/role',verfyToken,
+        (req, res) => ProjectMembersController.updateMemberRole(req, res)
+    );
+
+    // Get logged-in user's role in a specific project
+    app.get('/project-members/:projectId/role', verfyToken,
+        (req, res) => ProjectMembersController.getUserRole(req, res)
+    );
 }
 module.exports = ProjectMemberRoute;

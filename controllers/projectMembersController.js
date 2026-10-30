@@ -65,5 +65,84 @@ class ProjectMembersController{
         }
         
     }
+
+    // Promote a project member to manager
+    async updateMemberRole(req, res) {
+        try {
+            const { projectId, userId } = req.params;
+            const { role } = req.body;
+
+            if (role !== 'manager') {
+                return res.status(400).send({
+                    message: 'Invalid project role'
+                });
+            }
+
+            const result = await this.ProjectMembers.updateMemberRole(
+                projectId,
+                userId,
+                role
+            );
+
+            if (result.matchedCount === 0) {
+                return res.status(404).send({
+                    message: 'Project member not found'
+                });
+            }
+
+            res.send({
+                message: 'Member promoted to manager successfully'
+            });
+
+        } catch (error) {
+            console.error('Update project member role error:', error);
+            res.status(500).send({
+                message: 'Failed to update project member role'
+            });
+        }
+    }
+
+
+    // Get logged-in user's role in a specific project
+    async getUserRole(req, res) {
+        try {
+            const { projectId } = req.params;
+
+            // Find the logged-in user
+            const user = await this.collection.users.findOne({
+                email: req.token_email
+            });
+
+            if (!user) {
+                return res.status(404).send({
+                    message: 'User not found'
+                });
+            }
+
+            // Find the user's membership in this project
+            const membership = await this.collection.projectMembers.findOne({
+                projectId: new (require('mongodb').ObjectId)(projectId),
+                userId: user._id
+            });
+
+            if (!membership) {
+                return res.status(404).send({
+                    message: 'You are not a member of this project'
+                });
+            }
+
+            res.send({
+                role: membership.role
+            });
+
+        } catch (error) {
+            console.error('Get project role error:', error);
+            res.status(500).send({
+                message: 'Failed to get project role'
+            });
+        }
+    }
+
+    
 }
 module.exports=ProjectMembersController

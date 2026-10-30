@@ -56,5 +56,21 @@ class ProjectMembersModal{
         return result;
     }
 
+
+    // update project member role 
+    // Update project member role
+    async updateMemberRole(projectId, userId, role) {
+        const query = {
+            projectId: new ObjectId(projectId),
+            userId: new ObjectId(userId)
+        };
+
+        const updateDoc = {
+            $set: { role }
+        };
+
+        return await this.collection.updateOne(query, updateDoc);
+    }
+
 }
 module.exports = ProjectMembersModal;

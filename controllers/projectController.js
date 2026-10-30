@@ -38,6 +38,7 @@ class ProjectController {
                     $setOnInsert: {
                         projectId: projectId,
                         userId: user._id,
+                        role: 'manager',
                         joinedAt: new Date(),
                     },
                 },
@@ -64,19 +65,66 @@ class ProjectController {
     }
 
     // Get ALL Project 
+    // async getAllProjects(req, res) {
+    //     try {
+    //         const searchText = req.query.searchText;
+    //         const status = req.query.status; 
+    //         const sorting = req.query.sort;
+
+
+    //         const result = await this.Project.findAllProjects(searchText,status,sorting);
+    //         res.send(result)
+            
+    //     }
+    //     catch (error) {
+    //         res.status(500).send({ messgae: 'Error getting project' })
+    //     }
+    // }
+
     async getAllProjects(req, res) {
         try {
+            const email = req.token_email;
+
+            const user = await this.collection.users.findOne({ email });
+
+            if (!user) {
+                return res.status(404).send({
+                    message: 'User not found'
+                });
+            }
+
             const searchText = req.query.searchText;
-            const status = req.query.status; 
+            const status = req.query.status;
             const sorting = req.query.sort;
 
+            let projectIds = [];
 
-            const result = await this.Project.findAllProjects(searchText,status,sorting);
-            res.send(result)
-            
-        }
-        catch (error) {
-            res.status(500).send({ messgae: 'Error getting project' })
+            // Global admin can see all projects
+            if (user.role === 'admin') {
+                projectIds = null;
+            } else {
+                // Regular users can see only projects they belong to
+                const memberships = await this.collection.projectMembers
+                    .find({ userId: user._id })
+                    .toArray();
+
+                projectIds = memberships.map(member => member.projectId);
+            }
+
+            const result = await this.Project.findAllProjects(
+                searchText,
+                status,
+                sorting,
+                projectIds
+            );
+
+            res.send(result);
+
+        } catch (error) {
+            console.error('Get projects error:', error);
+            res.status(500).send({
+                message: 'Error getting projects'
+            });
         }
     }
 
