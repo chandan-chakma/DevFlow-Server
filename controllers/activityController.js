@@ -19,7 +19,7 @@ class ActivityController{
     async getActivtiy(req, res) {
         try {
             const { projectId } = req.params;
-            const result = await this.Activity.findActivity(projectId);
+            const result = await this.Activity.findActivity(projectId).limit(10);
             res.send(result);
         }
         catch (error) {

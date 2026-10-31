@@ -106,11 +106,42 @@ class TaskController{
     // get task data 
     async getAllTasks(req, res) {
         try {
+            const user = await this.collection.users.findOne({
+                email: req.token_email
+            });
+
+            if (!user) {
+                return res.status(404).send({
+                    message: 'User not found'
+                });
+            }
             const searchText = req.query.searchText;
             const status = req.query.status;
             const priority = req.query.priority;
             const sort = req.query.sort;
-            const result = await this.Task.findAllTasks(searchText, status, priority,sort);
+
+            // Admin sees all tasks.
+            // Regular users see only their assigned tasks.
+            let managedProjectIds = [];
+            // 3. Global admin doesn't need project filtering
+            if (user.role !== 'admin') {
+                const memberships = await this.collection.projectMembers
+                    .find({
+                        userId: user._id,
+                        role: 'manager'
+                    })
+                    .toArray();
+
+                managedProjectIds = memberships.map(
+                    member => member.projectId
+                );
+            }
+
+
+            const result = await this.Task.findAllTasks(searchText, status, priority, sort,
+                user.role === 'admin' ? null : user._id,
+                user.role === 'admin' ? null : managedProjectIds
+            );
             res.send(result);
         }
         catch (error) {

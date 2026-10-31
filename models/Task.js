@@ -73,7 +73,7 @@ class TaskModel{
                     updatedAt: 1,
                     assignee: {
                         _id: "$assignee._id",
-                        name: "$assignee.name",
+                        displayName: "$assignee.displayName",
                         email: "$assignee.email",
                         photoURL: "$assignee.photoURL",
                         role: "$assignee.role"
@@ -88,14 +88,28 @@ class TaskModel{
     }
 
     // get task data 
-    async findAllTasks(searchText = null, status = null, priority =null,sort='latest') {
-        const query={}
+    async findAllTasks(searchText = null, status = null, priority = null, sort = 'latest', userId = null, managedProjectIds = null) {
+        const query = {};
+        // Admin sees all tasks.
+        // Other users see their assigned tasks
+        // and all tasks from projects they manage.
+        if (userId) {
+            query.$or = [
+                { assignedTo: userId },
+                { projectId: { $in: managedProjectIds || [] } }
+            ];
+        }
         if (searchText) {
             query.title = {
                 $regex: searchText,
                 $options:'i'
             }
         }
+        // Only show tasks assigned to this user.
+        // null means admin: no assignee restriction.
+        // if (userId) {
+        //     query.assignedTo = userId;
+        // }
         if (status) {
             query.status = status;
         }
@@ -133,6 +147,21 @@ class TaskModel{
             {
                 $unwind: "$project"
             },
+            // Get assignee information
+            {
+                $lookup: {
+                    from: "users",
+                    localField: "assignedTo",
+                    foreignField: "_id",
+                    as: "assignee"
+                }
+            },
+            {
+                $unwind: {
+                    path: "$assignee",
+                    preserveNullAndEmptyArrays: true
+                }
+            },
             {
                 $project: {
                     title: 1,
@@ -143,7 +172,14 @@ class TaskModel{
                     projectId: 1,
                     createdAt: 1,
                     updatedAt: 1,
-                    projectName: "$project.name"
+                    projectName: "$project.name",
+                    assignee: {
+                        _id: "$assignee._id",
+                        displayName: "$assignee.displayName",
+                        email: "$assignee.email",
+                        photoURL: "$assignee.photoURL",
+                        role: "$assignee.role"
+                    }
                 }
             }
         ];
