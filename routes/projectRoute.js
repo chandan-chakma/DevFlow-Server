@@ -1,4 +1,4 @@
-const { verfyToken } = require("../middleware/auth.js");
+const { verfyToken, verifyAdmin } = require("../middleware/auth.js");
 
 function projectRoutes(app, controllers) {
     const ProjectController = controllers.project;
@@ -19,7 +19,7 @@ function projectRoutes(app, controllers) {
     }) 
 
     // project delete route 
-    app.delete('/projects/:id', verfyToken, (req, res) => {
+    app.delete('/projects/:id', verfyToken, verifyAdmin, (req, res) => {
         ProjectController.deleteProject(req,res)
     })
 }

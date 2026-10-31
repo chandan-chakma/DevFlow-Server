@@ -23,6 +23,7 @@ const { setIo } = require('./config/socket.js');
 const { ObjectId } = require('mongodb');
 const teamRoute = require('./routes/teamRoute.js');
 const DashboardRoute = require('./models/dashboardRoute.js');
+const { attachCollections } = require('./middleware/collections.js');
 
 const app = express();
 const server = http.createServer(app)
@@ -85,6 +86,7 @@ async function startServer() {
         // connect database 
         const { collection } = await (connectToMongoDB());
         // console.log("connected to the mongodb")
+        app.use(attachCollections(collection));
         // Initialize models
         const models = initializeModels(collection);
         // check socket and put authenticate user private room 

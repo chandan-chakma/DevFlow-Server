@@ -1,10 +1,10 @@
-const { verfyToken } = require("../middleware/auth.js");
+const { verfyToken, verifyAdmin, verifyProjectManager } = require("../middleware/auth.js");
 
 function TaskRoute(app, controllers) {
     const TaskController = controllers.task;
 
     // post taska  
-    app.post('/projects/:id/tasks', verfyToken, (req, res) => {
+    app.post('/projects/:id/tasks', verfyToken, verifyProjectManager,(req, res) => {
         TaskController.postTask(req,res)
     })
 
@@ -19,12 +19,12 @@ function TaskRoute(app, controllers) {
     })
 
     // Update task 
-    app.patch('/tasks/:id', verfyToken, (req, res) => {
+    app.patch('/tasks/:id', verfyToken,verifyAdmin, (req, res) => {
         TaskController.updatedTask(req,res)
     })
 
     // delete task data 
-    app.delete('/tasks/:id', verfyToken, (req, res) => {
+    app.delete('/tasks/:id', verfyToken, verifyAdmin, (req, res) => {
         TaskController.deleteTask(req, res);
     })
 
