@@ -78,7 +78,7 @@ io.use((socket, next) => {
 // middleware 
 const allowedOrigins = [
     "http://localhost:5173",
-    "https://storied-cascaron-c9afe7.netlify.app"
+    process.env.SITE_DOMAIN
 ];
 app.use(cors({
     origin: allowedOrigins,
