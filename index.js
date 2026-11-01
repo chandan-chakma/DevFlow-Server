@@ -24,6 +24,7 @@ const { ObjectId } = require('mongodb');
 const teamRoute = require('./routes/teamRoute.js');
 const DashboardRoute = require('./models/dashboardRoute.js');
 const { attachCollections } = require('./middleware/collections.js');
+const aiRoute = require('./routes/aiRoute.js');
 
 const app = express();
 const server = http.createServer(app)
@@ -282,6 +283,7 @@ async function startServer() {
         notificationRoute(app, controllers);
         teamRoute(app, controllers);
         DashboardRoute(app, controllers);
+        aiRoute(app, controllers);
 
 
         app.get('/', (req, res) => {

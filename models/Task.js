@@ -198,8 +198,16 @@ class TaskModel{
 
     async updateTask(id, updateData) {
         const query = { _id: new ObjectId(id) };
-        if (updateData.assignedTo) {
-            updateData.assignedTo = new ObjectId(updateData.assignedTo);
+        // Handle assignedTo separately
+        if (Object.prototype.hasOwnProperty.call(updateData, 'assignedTo')) {
+            if (
+                updateData.assignedTo &&
+                updateData.assignedTo !== "Unassigned"
+            ) {
+                updateData.assignedTo = new ObjectId(updateData.assignedTo);
+            } else {
+                delete updateData.assignedTo;
+            }
         }
         const updateDoc = {
             $set: updateData

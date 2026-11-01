@@ -1,4 +1,5 @@
 const ActivityController = require("./activityController.js");
+const AIController = require("./aiController.js");
 const CommentController = require("./commentController.js");
 const DashboardController = require("./dashboardController.js");
 const NotificatonController = require("./notificationController.js");
@@ -19,7 +20,8 @@ function initializeControllers(models, collection) {
         notification: new NotificatonController(models, collection),
         // New controller
         team: new TeamController(models, collection),
-        dashboard: new DashboardController(models,collection)
+        dashboard: new DashboardController(models, collection),
+        ai:new AIController()
     }
 }
 module.exports={initializeControllers}

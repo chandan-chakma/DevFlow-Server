@@ -260,6 +260,45 @@ class TaskController{
                 });
             }
 
+            // 3. Check user's permission
+            const isAdmin = actor.role === 'admin';
+
+            const membership = await this.collection.projectMembers.findOne({
+                projectId: existingTask.projectId,
+                userId: actor._id,
+                role: 'manager'
+            });
+
+            const isProjectManager = Boolean(membership);
+
+            const isAssignedUser =
+                existingTask.assignedTo &&
+                existingTask.assignedTo.toString() === actor._id.toString();
+
+            // Only admin, project manager, or assigned user can update
+            if (!isAdmin && !isProjectManager && !isAssignedUser) {
+                return res.status(403).send({
+                    message: 'You are not authorized to update this task.'
+                });
+            }
+
+            // Assigned members can update status only
+            if (!isAdmin && !isProjectManager) {
+                const allowedFields = ['status'];
+
+                const submittedFields = Object.keys(taskData);
+
+                const invalidFields = submittedFields.filter(
+                    field => !allowedFields.includes(field)
+                );
+
+                if (invalidFields.length > 0) {
+                    return res.status(403).send({
+                        message: 'Assigned members can only update task status.'
+                    });
+                }
+            }
+
             // 3. Check whether the task status is changing
             const isStatusChanging =
                 taskData.status &&
@@ -267,14 +306,14 @@ class TaskController{
 
             // 4. Only the assigned user can change task status
             if (isStatusChanging) {
-                if (
-                    !existingTask.assignedTo ||
-                    existingTask.assignedTo.toString() !== actor._id.toString()
-                ) {
-                    return res.status(403).send({
-                        message: 'Only the assigned user can update this task status.'
-                    });
-                }
+                // if (
+                //     !existingTask.assignedTo ||
+                //     existingTask.assignedTo.toString() !== actor._id.toString()
+                // ) {
+                //     return res.status(403).send({
+                //         message: 'Only the assigned user can update this task status.'
+                //     });
+                // }
 
                 // Validate allowed task statuses
                 const allowedStatuses = [

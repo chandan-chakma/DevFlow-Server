@@ -19,12 +19,12 @@ function TaskRoute(app, controllers) {
     })
 
     // Update task 
-    app.patch('/tasks/:id', verfyToken,verifyAdmin, (req, res) => {
+    app.patch('/tasks/:id', verfyToken, (req, res) => {
         TaskController.updatedTask(req,res)
     })
 
     // delete task data 
-    app.delete('/tasks/:id', verfyToken, verifyAdmin, (req, res) => {
+    app.delete('/tasks/:id', verfyToken, (req, res) => {
         TaskController.deleteTask(req, res);
     })
 
