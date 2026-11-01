@@ -20,11 +20,11 @@ class NotificatonController{
 
     async getNotification(req, res) {
         try {
-            console.log("Token email:", req.token_email);
+            // console.log("Token email:", req.token_email);
 
             const user = await this.User.findUserByEmail(req.token_email);
 
-            console.log("Found user:", user);
+            // console.log("Found user:", user);
 
             if (!user) {
                 return res.status(404).send({

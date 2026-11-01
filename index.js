@@ -32,7 +32,10 @@ const port = process.env.PORT || 3000;
 
 const io = new Server(server, {
     cors: {
-        origin: 'http://localhost:5173',
+        origin: [
+            "http://localhost:5173",
+            "https://storied-cascaron-c9afe7.netlify.app"
+        ],
         credentials: true,
     },
 });
@@ -64,7 +67,7 @@ io.use((socket, next) => {
     
 })
 
-// check soket connected 
+// check soket connected
 // io.on('connection', (socket) => {
 //     console.log('Socket connected:', socket.id);
 
@@ -73,9 +76,13 @@ io.use((socket, next) => {
 //     });
 // });
 // middleware 
+const allowedOrigins = [
+    "http://localhost:5173",
+    "https://storied-cascaron-c9afe7.netlify.app"
+];
 app.use(cors({
-        origin: 'http://localhost:5173',
-        credentials: true
+    origin: allowedOrigins,
+    credentials: true
 }))
 app.use(express.json())
 // https only cookies 
@@ -93,17 +100,17 @@ async function startServer() {
         // check socket and put authenticate user private room 
 
         io.on('connection', (socket) => {
-            console.log('🟢 New socket connection:', socket.id);
+            // console.log('🟢 New socket connection:', socket.id);
 
             // Temporary debugging: log events received by this socket
             socket.onAny((eventName, ...args) => {
-                console.log('📨 Event received:', eventName, args[0] ?? '');
+                // console.log('📨 Event received:', eventName, args[0] ?? '');
             });
 
             // Join a project room
             socket.on('join-project', async (projectId, callback) => {
                 try {
-                    console.log('📥 join-project event received:', projectId);
+                    // console.log('📥 join-project event received:', projectId);
 
                     // Validate project ID
                     if (
@@ -148,11 +155,11 @@ async function startServer() {
                         userId: user._id,
                     });
 
-                    console.log('🔎 Project membership:', {
-                        userId: user._id.toString(),
-                        projectId,
-                        membershipFound: !!membership,
-                    });
+                    // console.log('🔎 Project membership:', {
+                    //     userId: user._id.toString(),
+                    //     projectId,
+                    //     membershipFound: !!membership,
+                    // });
 
                     if (!membership) {
                         return callback?.({
@@ -166,11 +173,11 @@ async function startServer() {
 
                     await socket.join(projectRoom);
 
-                    console.log('✅ Socket joined project room:', {
-                        socketId: socket.id,
-                        room: projectRoom,
-                        rooms: [...socket.rooms],
-                    });
+                    // console.log('✅ Socket joined project room:', {
+                    //     socketId: socket.id,
+                    //     room: projectRoom,
+                    //     rooms: [...socket.rooms],
+                    // });
 
                     callback?.({
                         success: true,
@@ -202,18 +209,18 @@ async function startServer() {
 
                 socket.leave(projectRoom);
 
-                console.log('🚪 Socket left project room:', {
-                    socketId: socket.id,
-                    room: projectRoom,
-                });
+                // console.log('🚪 Socket left project room:', {
+                //     socketId: socket.id,
+                //     room: projectRoom,
+                // });
             });
 
             // Handle socket disconnection
             socket.on('disconnect', (reason) => {
-                console.log('🔴 Socket disconnected:', {
-                    socketId: socket.id,
-                    reason,
-                });
+                // console.log('🔴 Socket disconnected:', {
+                //     socketId: socket.id,
+                //     reason,
+                // });
             });
 
             // Set up the private notification room asynchronously
@@ -224,7 +231,7 @@ async function startServer() {
                     );
 
                     if (!user) {
-                        console.log('❌ Socket rejected: user not found');
+                        // console.log('❌ Socket rejected: user not found');
                         socket.disconnect(true);
                         return;
                     }
@@ -234,10 +241,10 @@ async function startServer() {
 
                     await socket.join(roomName);
 
-                    console.log('🔔 Joined private user room:', {
-                        socketId: socket.id,
-                        room: roomName,
-                    });
+                    // console.log('🔔 Joined private user room:', {
+                    //     socketId: socket.id,
+                    //     room: roomName,
+                    // });
                 } catch (error) {
                     console.error(
                         '❌ Socket connection setup failed:',
@@ -252,11 +259,11 @@ async function startServer() {
         // post jwt token
         app.post('/getToken', (req, res) => {
             const logUser = req.body;
-            console.log(logUser);
+            // console.log(logUser);
             const token = jwt.sign(logUser, process.env.JWT_SECRET, {
                 expiresIn:'1h'
             })
-            console.log("toke", token)
+            // console.log("toke", token)
             res.cookie('token', token,{
                 httpOnly: true,
                 secure: process.env.NODE_ENV === 'production',

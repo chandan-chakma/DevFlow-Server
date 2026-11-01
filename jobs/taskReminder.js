@@ -5,7 +5,7 @@ const { ObjectId } = require("mongodb");
 function startTaskReminderJob(collection, Notification) {
     // Run once every hour, at minute 0
     cron.schedule("0 * * * *", async () => {
-        console.log("Checking task deadlines...");
+        // console.log("Checking task deadlines...");
 
         try {
             const tasks = await collection.tasks.find({
@@ -35,7 +35,7 @@ function startTaskReminderJob(collection, Notification) {
                 const dueDate = String(task.dueDate).slice(0, 10);
 
                 if (!/^\d{4}-\d{2}-\d{2}$/.test(dueDate)) {
-                    console.log("Skipping task with invalid dueDate:", task._id);
+                    // console.log("Skipping task with invalid dueDate:", task._id);
                     continue;
                 }
 
@@ -86,9 +86,9 @@ function startTaskReminderJob(collection, Notification) {
                         message
                     });
 
-                    console.log(
-                        `Sent ${reminderType} reminder for task ${task._id}`
-                    );
+                    // console.log(
+                    //     `Sent ${reminderType} reminder for task ${task._id}`
+                    // );
                 } catch (notificationError) {
                     // Allow the next scheduled run to retry if creation fails
                     await collection.tasks.updateOne(
@@ -104,7 +104,7 @@ function startTaskReminderJob(collection, Notification) {
         }
     });
 
-    console.log("Task reminder job scheduled.");
+    // console.log("Task reminder job scheduled.");
 }
 
 module.exports = startTaskReminderJob;

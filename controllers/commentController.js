@@ -53,8 +53,8 @@ class CommentController{
                     if (createdComment) {
                         const io = getIo();
                         const projectRoom = `project:${task.projectId.toString()}`;
-                        console.log('📢 Emitting new-comment to room:', projectRoom);
-                        console.log('Comment:', createdComment);
+                        // console.log('📢 Emitting new-comment to room:', projectRoom);
+                        // console.log('Comment:', createdComment);
 
                         io.to(projectRoom).emit("new-comment", createdComment);
                     }
