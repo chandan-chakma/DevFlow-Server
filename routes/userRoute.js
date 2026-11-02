@@ -1,4 +1,4 @@
-const { verfyToken, verifyAdmin } = require("../middleware/auth.js");
+const { verfyToken, verifyAdmin, verifyProjectManager } = require("../middleware/auth.js");
 
 function UserRoute(app, controllers) {
     const UserController = controllers.user;
@@ -9,13 +9,13 @@ function UserRoute(app, controllers) {
     })
 
     // get all user 
-    app.get('/users', verfyToken, verifyAdmin, (req, res) => {
+    app.get('/users', verfyToken, verifyAdmin, verifyProjectManager,(req, res) => {
         UserController.getAllUser(req, res);
     })
 
     // update user role 
     // Update user role (admin only)
-    app.patch('/users/:id/role', verfyToken, verifyAdmin, (req, res) => UserController.updateUserRole(req, res));
+    app.patch('/users/:id/role', verfyToken, verifyAdmin,verifyProjectManager, (req, res) => UserController.updateUserRole(req, res));
 
 
     // get user role 
